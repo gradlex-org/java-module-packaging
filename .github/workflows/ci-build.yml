@@ -1,0 +1,19 @@
+name: Build Plugin
+on: [ push ]
+jobs:
+  gradle-build:
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: git clone
+        uses: actions/checkout@v4.1.1
+      - name: Set up JDK
+        uses: actions/setup-java@v4.0.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v2.11.1
+      - run: "./gradlew build"

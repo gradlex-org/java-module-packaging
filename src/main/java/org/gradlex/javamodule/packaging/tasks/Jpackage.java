@@ -166,9 +166,6 @@ abstract public class Jpackage extends DefaultTask {
             if (getCopyright().isPresent()) {
                 e.args("--copyright", getCopyright().get());
             }
-            for (String option : getOptions().get()) {
-                e.args(option);
-            }
             for (String javaOption : getJavaOptions().get()) {
                 e.args("--java-options", javaOption);
             }
@@ -202,6 +199,9 @@ abstract public class Jpackage extends DefaultTask {
                             "--dest",
                             getDestination().get().getAsFile().getPath()
                     );
+                    for (String option : getOptions().get()) {
+                        e.args(option);
+                    }
                 })
         );
 

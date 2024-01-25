@@ -27,6 +27,7 @@ import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
@@ -42,6 +43,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
@@ -76,7 +80,11 @@ abstract public class Jpackage extends DefaultTask {
 
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public DirectoryProperty getApplicationResources();
+    abstract public DirectoryProperty getJpackageResources();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract public ConfigurableFileCollection getResources();
 
     @Input
     @Optional
@@ -95,10 +103,8 @@ abstract public class Jpackage extends DefaultTask {
     @Input
     abstract public ListProperty<String> getPackageTypes();
 
-
     @OutputDirectory
     abstract public DirectoryProperty getDestination();
-
 
     @Inject
     abstract protected FileOperations getFiles();
@@ -117,64 +123,100 @@ abstract public class Jpackage extends DefaultTask {
 
         validateHostSystem(arch, hostArch, os, hostOs);
 
-        Directory resourcesDir = getDestination().dir("additional-resources").get();
+        Directory tmpDir = getDestination().dir("tmp").get();
+        Directory resourcesDir = tmpDir.dir("jpackage-resources");
+        Directory appImageParent = tmpDir.dir("app-image");
+        //noinspection ResultOfMethodCallIgnored
+        resourcesDir.getAsFile().mkdirs();
+
         getFiles().copy(c -> {
-            c.from(getApplicationResources());
+            c.from(getJpackageResources());
             c.into(resourcesDir);
             c.rename(f -> f.replace("icon", getApplicationName().get()));
         });
-        //noinspection ResultOfMethodCallIgnored
-        resourcesDir.getAsFile().mkdirs(); // if no files were copied, make sure there is an empty directory
 
-        String executable = WINDOWS.equals(os) ? "bin/jpackage.exe" : "bin/jpackage";
+        String executableName = WINDOWS.equals(os) ? "jpackage.exe" : "jpackage";
+        String jpackage = getJavaInstallation().get().getInstallationPath().file("bin/" + executableName).getAsFile().getAbsolutePath();
+
+        // create app image folder
+        getExec().exec(e -> {
+            e.commandLine(
+                    jpackage,
+                    "--type",
+                    "app-image",
+                    "--module",
+                    getMainModule().get(),
+                    "--resource-dir",
+                    resourcesDir.getAsFile().getPath(),
+                    "--app-version",
+                    getVersion().get(),
+                    "--module-path",
+                    getModulePath().getAsPath(),
+                    "--name",
+                    getApplicationName().get(),
+                    "--dest",
+                    appImageParent.getAsFile().getPath()
+            );
+            if (getApplicationDescription().isPresent()) {
+                e.args("--description", getApplicationDescription().get());
+            }
+            if (getVendor().isPresent()) {
+                e.args("--vendor", getVendor().get());
+            }
+            if (getCopyright().isPresent()) {
+                e.args("--copyright", getCopyright().get());
+            }
+            for (String option : getOptions().get()) {
+                e.args(option);
+            }
+            for (String javaOption : getJavaOptions().get()) {
+                e.args("--java-options", javaOption);
+            }
+        });
+
+        File appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
+        File appResourcesFolder;
+        if (os.contains("macos")) {
+            appResourcesFolder  = new File(appImageFolder, "Contents/app");
+        } else if (os.contains("windows")) {
+            appResourcesFolder  = new File(appImageFolder, "app");
+        } else {
+            appResourcesFolder  = new File(appImageFolder, "lib/app");
+        }
+
+        // copy additional resource into app-image folder
+        getFiles().copy(c -> {
+            c.from(getResources());
+            c.into(appResourcesFolder);
+        });
+
+        // package with additional resources
         getPackageTypes().get().forEach(packageType ->
                 getExec().exec(e -> {
                     e.commandLine(
-                            getJavaInstallation().get().getInstallationPath().file(executable).getAsFile().getAbsolutePath(),
+                            jpackage,
                             "--type",
                             packageType,
-                            "--module",
-                            getMainModule().get(),
-                            "--resource-dir",
-                            resourcesDir,
-                            "--app-version",
-                            getVersion().get(),
-                            "--module-path",
-                            getModulePath().getAsPath(),
-                            "--name",
-                            getApplicationName().get(),
+                            "--app-image",
+                            appImageFolder.getPath(),
                             "--dest",
                             getDestination().get().getAsFile().getPath()
                     );
-                    if (getApplicationDescription().isPresent()) {
-                        e.args("--description", getApplicationDescription().get());
-                    }
-                    if (getVendor().isPresent()) {
-                        e.args("--vendor", getVendor().get());
-                    }
-                    if (getCopyright().isPresent()) {
-                        e.args("--copyright", getCopyright().get());
-                    }
-                    for (String option : getOptions().get()) {
-                        e.args(option);
-                    }
-                    for (String javaOption : getJavaOptions().get()) {
-                        e.args("--java-options", javaOption);
-                    }
                 })
         );
 
-        getFiles().delete(resourcesDir);
+        // getFiles().delete(tmpDir);
 
         generateChecksums();
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {
-        File dest = getDestination().get().getAsFile();
-        for (File result : requireNonNull(dest.listFiles())) {
+        File destination = getDestination().get().getAsFile();
+        List<File> allFiles = Arrays.stream(requireNonNull(destination.listFiles())).filter(File::isFile).collect(Collectors.toList());
+        for (File result : allFiles) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] encoded = digest.digest(Files.readAllBytes(result.toPath()));
-            Files.write(new File(dest, result.getName() + ".sha256").toPath(), bytesToHex(encoded).getBytes());
+            Files.write(new File(destination, result.getName() + ".sha256").toPath(), bytesToHex(encoded).getBytes());
         }
     }
 

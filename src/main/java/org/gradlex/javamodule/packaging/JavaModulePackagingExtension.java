@@ -27,6 +27,7 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.LibraryElements;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.attributes.java.TargetJvmEnvironment;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.ApplicationPlugin;
@@ -65,7 +66,8 @@ abstract public class JavaModulePackagingExtension {
     abstract public Property<String> getApplicationDescription();
     abstract public Property<String> getVendor();
     abstract public Property<String> getCopyright();
-    abstract public DirectoryProperty getApplicationResources();
+    abstract public DirectoryProperty getJpackageResources();
+    abstract public ConfigurableFileCollection getResources();
 
     @Inject
     abstract protected JavaToolchainService getJavaToolchains();
@@ -91,8 +93,6 @@ abstract public class JavaModulePackagingExtension {
             }
             return Collections.emptyList();
         }));
-
-
 
         ConfigurationContainer configurations = getProject().getConfigurations();
         SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
@@ -169,13 +169,14 @@ abstract public class JavaModulePackagingExtension {
             t.getModulePath().from(runtimeClasspath);
 
             t.getApplicationName().convention(getApplicationName());
-            t.getApplicationResources().convention(getApplicationResources().dir(target.getOperatingSystem()));
+            t.getJpackageResources().convention(getJpackageResources().dir(target.getOperatingSystem()));
             t.getApplicationDescription().convention(getApplicationDescription());
             t.getVendor().convention(getVendor());
             t.getCopyright().convention(getCopyright());
             t.getJavaOptions().convention(application.getApplicationDefaultJvmArgs());
             t.getOptions().convention(target.getOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
+            t.getResources().from(getResources());
 
             t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getLabel()));
         });

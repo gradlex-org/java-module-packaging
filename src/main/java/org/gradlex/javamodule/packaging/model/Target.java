@@ -23,7 +23,7 @@ import javax.inject.Inject;
 
 abstract public class Target {
 
-    private final String label;
+    private final String name;
 
     abstract public Property<String> getOperatingSystem();
     abstract public Property<String> getArchitecture();
@@ -32,11 +32,11 @@ abstract public class Target {
     abstract public ListProperty<String> getOptions();
 
     @Inject
-    public Target(String label) {
-        this.label = label;
+    public Target(String name) {
+        this.name = name;
     }
 
-    public String getLabel() {
-        return label;
+    public String getName() {
+        return name;
     }
 }

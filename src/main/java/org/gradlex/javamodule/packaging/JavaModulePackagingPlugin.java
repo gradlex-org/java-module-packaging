@@ -19,7 +19,9 @@ package org.gradlex.javamodule.packaging;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
 
@@ -39,10 +41,13 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         }
 
         project.getPlugins().apply(JavaPlugin.class);
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        SourceDirectorySet mainResources = sourceSets.getByName("main").getResources();
 
         JavaModulePackagingExtension javaModulePackaging = project.getExtensions().create("javaModulePackaging", JavaModulePackagingExtension.class);
         javaModulePackaging.getApplicationName().convention(project.getName());
         javaModulePackaging.getApplicationVersion().convention(project.provider(() -> (String) project.getVersion()));
-        javaModulePackaging.getJpackageResources().convention(project.getLayout().getProjectDirectory().dir("resources"));
+        javaModulePackaging.getJpackageResources().convention(project.provider(() ->
+                project.getLayout().getProjectDirectory().dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
     }
 }

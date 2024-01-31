@@ -205,7 +205,7 @@ abstract public class Jpackage extends DefaultTask {
                 })
         );
 
-        // getFiles().delete(tmpDir);
+        getFiles().delete(tmpDir);
 
         generateChecksums();
     }

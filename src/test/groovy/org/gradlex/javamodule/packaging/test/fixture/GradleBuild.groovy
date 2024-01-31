@@ -25,9 +25,9 @@ class GradleBuild {
         this.libBuildFile = file('lib/build.gradle.kts')
         this.libModuleInfoFile = file('lib/src/main/java/module-info.java')
 
-        file('app/resources/windows').mkdirs()
-        file('app/resources/macos').mkdirs()
-        file('app/resources/linux').mkdirs()
+        file('app/src/main/resourcesPackage/windows').mkdirs()
+        file('app/src/main/resourcesPackage/macos').mkdirs()
+        file('app/src/main/resourcesPackage/linux').mkdirs()
 
         settingsFile << '''
             dependencyResolutionManagement { repositories.mavenCentral() }

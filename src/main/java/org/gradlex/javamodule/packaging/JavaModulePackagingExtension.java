@@ -225,6 +225,7 @@ abstract public class JavaModulePackagingExtension {
             t.getResources().from(getResources());
 
             t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
+            t.getTempDirectory().convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
         });
 
         tasks.register("run" + capitalize(target.getName()), JavaExec.class, t -> {

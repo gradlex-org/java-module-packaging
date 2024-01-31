@@ -28,6 +28,7 @@ import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
@@ -106,6 +107,9 @@ abstract public class Jpackage extends DefaultTask {
     @OutputDirectory
     abstract public DirectoryProperty getDestination();
 
+    @Internal
+    abstract public DirectoryProperty getTempDirectory();
+
     @Inject
     abstract protected FileOperations getFiles();
 
@@ -114,6 +118,7 @@ abstract public class Jpackage extends DefaultTask {
 
     @TaskAction
     public void runJpackage() throws Exception {
+        getFiles().delete(getTempDirectory());
         getFiles().delete(getDestination());
 
         String os = getOperatingSystem().get();
@@ -123,9 +128,8 @@ abstract public class Jpackage extends DefaultTask {
 
         validateHostSystem(arch, hostArch, os, hostOs);
 
-        Directory tmpDir = getDestination().dir("tmp").get();
-        Directory resourcesDir = tmpDir.dir("jpackage-resources");
-        Directory appImageParent = tmpDir.dir("app-image");
+        Directory resourcesDir = getTempDirectory().get().dir("jpackage-resources");
+        Directory appImageParent = getTempDirectory().get().dir("app-image");
         //noinspection ResultOfMethodCallIgnored
         resourcesDir.getAsFile().mkdirs();
 
@@ -204,8 +208,6 @@ abstract public class Jpackage extends DefaultTask {
                     }
                 })
         );
-
-        getFiles().delete(tmpDir);
 
         generateChecksums();
     }

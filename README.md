@@ -5,7 +5,7 @@
 
 A Gradle plugin to package modular Java application as standalone bundles/installers for Windows, macOS and Linux with [jpackage](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jpackage.html). 
 
-This plugin is maintained by me, [Jendrik Johannes](https://github.com/jjohannes).
+This [GradleX](https://gradlex.org) plugin is maintained by me, [Jendrik Johannes](https://github.com/jjohannes).
 I offer consulting and training for Gradle and/or the Java Module System - please [reach out](mailto:jendrik.johannes@gmail.com) if you are interested.
 There is also my [YouTube channel](https://www.youtube.com/playlist?list=PLWQK2ZdV4Yl2k2OmC_gsjDpdIBTN0qqkE) on Gradle topics.
 
@@ -17,15 +17,14 @@ If you plan to build Java Modules with Gradle, you should consider using these p
 
 - [`id("org.gradlex.java-module-dependencies")`](https://github.com/gradlex-org/java-module-dependencies)  
   Avoid duplicated dependency definitions and get your Module Path under control
+- [`id("org.gradlex.jvm-dependency-conflict-resolution")`](https://github.com/gradlex-org/jvm-dependency-conflict-resolution)  
+  Additional metadata for widely-used modules and patching facilities to add missing metadata
 - [`id("org.gradlex.java-module-testing")`](https://github.com/gradlex-org/java-module-testing)  
   Proper test setup for Java Modules
 - [`id("org.gradlex.extra-java-module-info")`](https://github.com/gradlex-org/extra-java-module-info)  
   Only if your (existing) project cannot avoid using non-module legacy Jars
 - [`id("org.gradlex.java-module-packaging")`](https://github.com/gradlex-org/java-module-packaging)  
   Package standalone applications for Windows, macOS and Linux
-
-[Here is a sample](https://github.com/gradlex-org/java-module-testing/tree/main/samples/use-all-java-module-plugins)
-that shows all plugins in combination.
 
 [In episodes 31, 32, 33 of Understanding Gradle](https://github.com/jjohannes/understanding-gradle) I explain what these plugins do and why they are needed.
 [<img src="https://onepiecesoftware.github.io/img/videos/31.png" width="260">](https://www.youtube.com/watch?v=X9u1taDwLSA&list=PLWQK2ZdV4Yl2k2OmC_gsjDpdIBTN0qqkE)
@@ -36,6 +35,10 @@ that shows all plugins in combination.
 [<img src="https://onepiecesoftware.github.io/img/videos/15-3.png" width="260">](https://www.youtube.com/watch?v=uRieSnovlVc&list=PLWQK2ZdV4Yl2k2OmC_gsjDpdIBTN0qqkE)
 
 # How to use?
+
+Working example projects to inspect:
+- [java-module-system](https://github.com/jjohannes/java-module-system) contains a compact sample and further documentation
+- [gradle-project-setup-howto](https://github.com/jjohannes/gradle-project-setup-howto/tree/java_module_system) is a full-fledged Java Module System project setup
 
 For general information about how to structure Gradle builds and apply community plugins like this one to all subprojects
 you can check out my [Understanding Gradle video series](https://www.youtube.com/playlist?list=PLWQK2ZdV4Yl2k2OmC_gsjDpdIBTN0qqkE).
@@ -80,17 +83,85 @@ javaModulePackaging {
 }
 ```
 
-## How ot use?
-
-You can now run _target_ specific builds:
+You can now run _target-specific_ builds:
 
 ```
 ./gradlew assembleWindows
 ```
 
+```
+./gradlew runWindows
+```
+
 ## Using target specific variants of libraries (like JavaFX)
 
+The plugin uses Gradle's [variant-aware dependency management](https://docs.gradle.org/current/userguide/variant_model.html)
+to select target-specific Jars based on the configured [targets](#apply-and-use-the-plugin).
+For this, such a library needs to be published with [Gradle Module Metadata](https://docs.gradle.org/current/userguide/publishing_gradle_module_metadata.html)
+and contain the necessary information about the available target-specific Jars.
+If the metadata is missing or incomplete, you should use the [org.gradlex.jvm-dependency-conflict-resolution](https://github.com/gradlex-org/jvm-dependency-conflict-resolution)
+plugin to add the missing information via [addTargetPlatformVariant](https://gradlex.org/jvm-dependency-conflict-resolution/#patch-dsl-block).
+
+For example, for JavaFX it may look like this:
+```
+jvmDependencyConflicts.patch {
+  listOf("base", "graphics", "controls").forEach { jfxModule ->
+    module("org.openjfx:javafx-$jfxModule") {
+      addTargetPlatformVariant("linux", OperatingSystemFamily.LINUX, MachineArchitecture.X86_64)
+      addTargetPlatformVariant("linux-aarch64", OperatingSystemFamily.LINUX, MachineArchitecture.ARM64)
+      addTargetPlatformVariant("mac", OperatingSystemFamily.MACOS, MachineArchitecture.X86_64)
+      addTargetPlatformVariant("mac-aarch64", OperatingSystemFamily.MACOS, MachineArchitecture.ARM64)
+      addTargetPlatformVariant("win", OperatingSystemFamily.WINDOWS, MachineArchitecture.X86_64)
+    }
+  }   
+}
+```
+
 ## Running on GitHub Actions
+
+Target-specific _tasks_ such as `assembleWindows-2022` or `assembleMacos-14` only run on the fitting operating system and architecture.
+If you want to build your software for multiple targets and have GitHub actions available, you can use different
+runners to create packages for the different targets. A setup for this can look like this
+(assuming your targets are named: `ubuntu-22.04`, `windows-2022`, `macos-13`, `macos-14`):
+
+```
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version-file: ./gradle/java-version.txt
+      - uses: gradle/actions/setup-gradle@v3
+      - run: "./gradlew check"
+
+  package:
+    needs: check
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-13, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version-file: ./gradle/java-version.txt
+      - uses: gradle/actions/setup-gradle@v3
+      - run: "./gradlew assemble${{ matrix.os }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Application Package ${{ matrix.os }}
+          path: build/app/packages/*/*
+```
+
+To avoid re-compilation of the Java code on each of the runners, you can run a
+[Gradle remote cache node](https://docs.gradle.com/build-cache-node).
+
+The [java-module-system](https://github.com/jjohannes/java-module-system) project is an example that
+uses GitHub actions with a Gradle remote build cache.
 
 # Disclaimer
 

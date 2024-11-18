@@ -50,7 +50,7 @@ Add this to the build file of your convention plugin's build
 
 ```
 dependencies {
-    implementation("org.gradlex:java-module-packaging:0.1")
+    implementation("org.gradlex:java-module-packaging:1.0")
 }
 ```
 

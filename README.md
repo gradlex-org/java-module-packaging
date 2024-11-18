@@ -64,22 +64,24 @@ plugins {
 }
 
 javaModulePackaging {
-    target("windows") {
-        operatingSystem = "windows"
-        architecture = "x86-64"
+    target("ubuntu-22.04") {
+        operatingSystem = OperatingSystemFamily.LINUX
+        architecture = MachineArchitecture.X86_64
     }
-    target("ubuntu") {
-        operatingSystem = "linux"
-        architecture = "x86-64"
+    target("macos-13") {
+        operatingSystem = OperatingSystemFamily.MACOS
+        architecture = MachineArchitecture.X86_64
     }
-    target("macos") {
-        operatingSystem = "macos"
-        architecture = "x86-64"
+    target("macos-14") {
+        operatingSystem = OperatingSystemFamily.MACOS
+        architecture = MachineArchitecture.ARM64
     }
-    target("macosM1") {
-        operatingSystem = "macos"
-        architecture = "aarch64"
+    target("windows-2022") {
+        operatingSystem = OperatingSystemFamily.WINDOWS
+        architecture = MachineArchitecture.X86_64
     }
+
+    primaryTarget(target("macos-14"))
 }
 ```
 
@@ -91,6 +93,20 @@ You can now run _target-specific_ builds:
 
 ```
 ./gradlew runWindows
+```
+
+There are some additional configuration options that can be used:
+
+```
+javaModulePackaging {
+    applicationName();
+    applicationVersion();
+    applicationDescription = ""
+    vendor = "My Company" 
+    copyright = "(c) My Company" 
+    jpackageResources.setFrom(...);
+    resources.from(...)
+}
 ```
 
 ## Using target specific variants of libraries (like JavaFX)
@@ -116,6 +132,22 @@ jvmDependencyConflicts.patch {
   }   
 }
 ```
+
+## Testing against multiple targets
+
+> [!WARNING]
+> Currently, the following only works in combination with [Blackbox Test Suites configured by the _org.gradlex.java-module-testing_ plugin](https://github.com/gradlex-org/java-module-testing?tab=readme-ov-file#blackbox-test-suites).
+
+Tests run against the _primary_ target, which is either the local machine you run the build on, or what is configured via `javaModulePackaging.primaryTarget(...)`.
+If you want to run the test multiple times against each target you configured, you can configure this as follows:
+
+```
+javaModulePackaging {
+    multiTargetTestSuite(testing.suites["test"])
+}
+```
+
+Then, there will be a test task available for each target, such as `testWindows-2022` or `testMacos-14`.
 
 ## Running on GitHub Actions
 

@@ -48,6 +48,7 @@ import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.gradle.testing.base.TestSuite;
 import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
+import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -86,10 +87,19 @@ abstract public class JavaModulePackagingExtension {
     abstract protected Project getProject();
 
 
+    /**
+     * Retrieve the target with the given 'label'. If the target does not yet exist, it will be created.
+     */
+    @SuppressWarnings("unused")
     public Target target(String label) {
         return target(label, target -> {});
     }
 
+    /**
+     * Register or update a target with the given 'label'. The 'label' uniquely identifies the target.
+     * It is used for task names and can be chosen freely.
+     * Details of the target are configured in the {@link Target} configuration action.
+     */
     public Target target(String label, Action<? super Target> action) {
         Target target;
         if (targets.getNames().contains(label)) {
@@ -102,6 +112,11 @@ abstract public class JavaModulePackagingExtension {
         return target;
     }
 
+    /**
+     * Set a 'primary target'. Standard Gradle tasks that are not bound to a specific target – like 'assemble' – use
+     * this 'primary target'.
+     */
+    @SuppressWarnings("unused")
     public Target primaryTarget(Target target) {
         SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
         ConfigurationContainer configurations = getProject().getConfigurations();
@@ -117,22 +132,25 @@ abstract public class JavaModulePackagingExtension {
         return target;
     }
 
+    /**
+     * Set a test suite to be 'multi-target'. This registers an additional 'test' task for each target.
+     */
     public TestSuite multiTargetTestSuite(TestSuite testSuite) {
         if (!(testSuite instanceof JvmTestSuite)) {
             return testSuite;
         }
 
         JvmTestSuite suite = (JvmTestSuite) testSuite;
-        targets.all(target -> {
-            suite.getTargets().register(testSuite.getName() + capitalize(target.getName()), testTarget -> {
-                testTarget.getTestTask().configure(task -> {
-                    ConfigurationContainer configurations = getProject().getConfigurations();
-                    task.setClasspath(configurations.getByName(target.getName() + capitalize(suite.getSources().getRuntimeClasspathConfigurationName())).plus(
-                            getObjects().fileCollection().from(getProject().getTasks().named(suite.getSources().getJarTaskName())))
-                    );
-                });
-            });
-        });
+        targets.all(target -> suite.getTargets().register(testSuite.getName() + capitalize(target.getName()), testTarget -> testTarget.getTestTask().configure(task -> {
+            task.getInputs().property("operatingSystem", target.getOperatingSystem());
+            task.getInputs().property("architecture", target.getArchitecture());
+
+            ConfigurationContainer configurations = getProject().getConfigurations();
+            task.setClasspath(configurations.getByName(target.getName() + capitalize(suite.getSources().getRuntimeClasspathConfigurationName())).plus(
+                    getObjects().fileCollection().from(getProject().getTasks().named(suite.getSources().getJarTaskName())))
+            );
+            task.doFirst(new ValidateHostSystemAction());
+        })));
 
         return testSuite;
     }

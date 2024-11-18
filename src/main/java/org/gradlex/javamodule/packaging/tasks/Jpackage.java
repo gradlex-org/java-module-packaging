@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
+import static org.gradlex.javamodule.packaging.internal.Validator.validateHostSystem;
 
 @CacheableTask
 abstract public class Jpackage extends DefaultTask {
@@ -123,10 +124,8 @@ abstract public class Jpackage extends DefaultTask {
 
         String os = getOperatingSystem().get();
         String arch = getArchitecture().get();
-        String hostOs = System.getProperty("os.name").replace(" ", "").toLowerCase();
-        String hostArch = System.getProperty("os.arch");
 
-        validateHostSystem(arch, hostArch, os, hostOs);
+        validateHostSystem(arch, os);
 
         Directory resourcesDir = getTempDirectory().get().dir("jpackage-resources");
         Directory appImageParent = getTempDirectory().get().dir("app-image");
@@ -232,35 +231,5 @@ abstract public class Jpackage extends DefaultTask {
             hexString.append(hex);
         }
         return hexString.toString();
-    }
-
-    private void validateHostSystem(String arch, String hostArch, String os, String hostOs) {
-        if (os.contains("macos")) {
-            if (!hostOs.contains(os)) {
-                wrongHostSystemError(hostOs, os);
-            }
-        } else if (os.contains("windows")) {
-            if (!hostOs.contains(os)) {
-                wrongHostSystemError(hostOs, os);
-            }
-        } else {
-            if (hostOs.contains("windows") || hostOs.contains("macos")) {
-                wrongHostSystemError(hostOs, os);
-            }
-        }
-
-        if (arch.contains("64") && !hostArch.contains("64")) {
-            wrongHostSystemError(hostArch, arch);
-        }
-        if (arch.contains("aarch") && !hostArch.contains("aarch")) {
-            wrongHostSystemError(hostArch, arch);
-        }
-        if (!arch.contains("aarch") && hostArch.contains("aarch")) {
-            wrongHostSystemError(hostArch, arch);
-        }
-    }
-
-    private void wrongHostSystemError(String hostOs, String os) {
-        throw new RuntimeException("Running on " + hostOs + "; cannot build for " + os);
     }
 }

@@ -54,7 +54,6 @@ import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_TASK_NAME;
 import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_GROUP;
 import static org.gradle.nativeplatform.MachineArchitecture.ARCHITECTURE_ATTRIBUTE;
 import static org.gradle.nativeplatform.OperatingSystemFamily.LINUX;
@@ -262,7 +261,6 @@ abstract public class JavaModulePackagingExtension {
                 t.setGroup(BUILD_GROUP);
                 t.setDescription("Builds this project for " + target.getName());
             });
-            tasks.named(BUILD_TASK_NAME, t -> t.dependsOn(lifecycleTask));
         }
         tasks.named(targetAssembleLifecycle, t -> t.dependsOn(jpackage));
     }

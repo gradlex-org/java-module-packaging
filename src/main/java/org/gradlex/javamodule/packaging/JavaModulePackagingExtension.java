@@ -36,6 +36,7 @@ import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.jvm.JvmTestSuite;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
@@ -71,6 +72,7 @@ abstract public class JavaModulePackagingExtension {
     abstract public Property<String> getApplicationDescription();
     abstract public Property<String> getVendor();
     abstract public Property<String> getCopyright();
+    abstract public ListProperty<String> getJlinkOptions();
     abstract public DirectoryProperty getJpackageResources();
     abstract public ConfigurableFileCollection getResources();
 
@@ -237,6 +239,7 @@ abstract public class JavaModulePackagingExtension {
             t.getVendor().convention(getVendor());
             t.getCopyright().convention(getCopyright());
             t.getJavaOptions().convention(application.getApplicationDefaultJvmArgs());
+            t.getJlinkOptions().convention(getJlinkOptions());
             t.getOptions().convention(target.getOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getResources().from(getResources());

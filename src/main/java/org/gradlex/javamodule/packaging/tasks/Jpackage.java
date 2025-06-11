@@ -100,6 +100,9 @@ abstract public class Jpackage extends DefaultTask {
     abstract public ListProperty<String> getJavaOptions();
 
     @Input
+    abstract public ListProperty<String> getJlinkOptions();
+
+    @Input
     abstract public ListProperty<String> getOptions();
 
     @Input
@@ -171,6 +174,9 @@ abstract public class Jpackage extends DefaultTask {
             }
             for (String javaOption : getJavaOptions().get()) {
                 e.args("--java-options", javaOption);
+            }
+            for (String javaOption : getJlinkOptions().get()) {
+                e.args("--jlink-options", javaOption);
             }
         });
 

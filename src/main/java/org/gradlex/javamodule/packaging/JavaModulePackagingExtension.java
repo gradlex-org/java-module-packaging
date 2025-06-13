@@ -73,8 +73,10 @@ abstract public class JavaModulePackagingExtension {
     abstract public Property<String> getVendor();
     abstract public Property<String> getCopyright();
     abstract public ListProperty<String> getJlinkOptions();
+    abstract public ListProperty<String> getAddModules();
     abstract public DirectoryProperty getJpackageResources();
     abstract public ConfigurableFileCollection getResources();
+    abstract public Property<Boolean> getVerbose();
 
     private final NamedDomainObjectContainer<Target> targets = getObjects().domainObjectContainer(Target.class);
 
@@ -240,9 +242,11 @@ abstract public class JavaModulePackagingExtension {
             t.getCopyright().convention(getCopyright());
             t.getJavaOptions().convention(application.getApplicationDefaultJvmArgs());
             t.getJlinkOptions().convention(getJlinkOptions());
+            t.getAddModules().convention(getAddModules());
             t.getOptions().convention(target.getOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getResources().from(getResources());
+            t.getVerbose().convention(getVerbose());
 
             t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
             t.getTempDirectory().convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));

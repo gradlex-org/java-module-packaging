@@ -103,10 +103,16 @@ abstract public class Jpackage extends DefaultTask {
     abstract public ListProperty<String> getJlinkOptions();
 
     @Input
+    abstract public ListProperty<String> getAddModules();
+
+    @Input
     abstract public ListProperty<String> getOptions();
 
     @Input
     abstract public ListProperty<String> getPackageTypes();
+
+    @Input
+    abstract public Property<Boolean> getVerbose();
 
     @OutputDirectory
     abstract public DirectoryProperty getDestination();
@@ -177,6 +183,12 @@ abstract public class Jpackage extends DefaultTask {
             }
             for (String javaOption : getJlinkOptions().get()) {
                 e.args("--jlink-options", javaOption);
+            }
+            if (!getAddModules().get().isEmpty()) {
+                e.args("--add-modules", String.join(",", getAddModules().get()));
+            }
+            if (getVerbose().get()) {
+                e.args("--verbose");
             }
         });
 

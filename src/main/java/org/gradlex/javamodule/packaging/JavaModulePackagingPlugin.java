@@ -49,5 +49,6 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         javaModulePackaging.getApplicationVersion().convention(project.provider(() -> (String) project.getVersion()));
         javaModulePackaging.getJpackageResources().convention(project.provider(() ->
                 project.getLayout().getProjectDirectory().dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
+        javaModulePackaging.getVerbose().convention(false);
     }
 }

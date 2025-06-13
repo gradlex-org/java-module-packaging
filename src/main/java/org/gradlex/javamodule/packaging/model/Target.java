@@ -16,6 +16,7 @@
 
 package org.gradlex.javamodule.packaging.model;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
@@ -30,6 +31,8 @@ abstract public class Target {
 
     abstract public ListProperty<String> getPackageTypes();
     abstract public ListProperty<String> getOptions();
+
+    abstract public ConfigurableFileCollection getTargetResources();
 
     @Inject
     public Target(String name) {

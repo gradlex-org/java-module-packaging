@@ -88,6 +88,10 @@ abstract public class Jpackage extends DefaultTask {
     @PathSensitive(PathSensitivity.RELATIVE)
     abstract public ConfigurableFileCollection getResources();
 
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract public ConfigurableFileCollection getTargetResources();
+
     @Input
     @Optional
     abstract public Property<String> getVendor();
@@ -193,19 +197,20 @@ abstract public class Jpackage extends DefaultTask {
         });
 
         File appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
-        File appResourcesFolder;
+        File appRootFolder;
         if (os.contains("macos")) {
-            appResourcesFolder  = new File(appImageFolder, "Contents/app");
+            appRootFolder  = new File(appImageFolder, "Contents");
         } else if (os.contains("windows")) {
-            appResourcesFolder  = new File(appImageFolder, "app");
+            appRootFolder  = appImageFolder;
         } else {
-            appResourcesFolder  = new File(appImageFolder, "lib/app");
+            appRootFolder  = new File(appImageFolder, "lib");
         }
 
         // copy additional resource into app-image folder
         getFiles().copy(c -> {
-            c.from(getResources());
-            c.into(appResourcesFolder);
+            c.into(appRootFolder);
+            c.from(getTargetResources());
+            c.from(getResources(), to -> to.into("app")); // 'app' is the folder Java loads resources from at runtime
         });
 
         // package with additional resources

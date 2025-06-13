@@ -50,5 +50,14 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         javaModulePackaging.getJpackageResources().convention(project.provider(() ->
                 project.getLayout().getProjectDirectory().dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
         javaModulePackaging.getVerbose().convention(false);
+
+        configureConventionsForCurrentHost();
+    }
+
+    private void configureConventionsForCurrentHost() {
+        // A few conveniences for local development
+        
+
+
     }
 }

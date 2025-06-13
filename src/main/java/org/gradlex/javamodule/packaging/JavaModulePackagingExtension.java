@@ -18,6 +18,7 @@ package org.gradlex.javamodule.packaging;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -116,6 +117,16 @@ abstract public class JavaModulePackagingExtension {
     }
 
     /**
+     * Configure all targets for the given OS.
+     */
+    @SuppressWarnings("unused")
+    public void targetsWithOs(String operatingSystem, Action<? super Target> action) {
+        NamedDomainObjectSet<Target> matches = targets.matching(t ->
+                t.getOperatingSystem().isPresent() && t.getOperatingSystem().get().equals(operatingSystem));
+        matches.all(action);
+    }
+
+    /**
      * Set a 'primary target'. Standard Gradle tasks that are not bound to a specific target – like 'assemble' – use
      * this 'primary target'.
      */
@@ -138,6 +149,7 @@ abstract public class JavaModulePackagingExtension {
     /**
      * Set a test suite to be 'multi-target'. This registers an additional 'test' task for each target.
      */
+    @SuppressWarnings({"unused", "UnstableApiUsage"})
     public TestSuite multiTargetTestSuite(TestSuite testSuite) {
         if (!(testSuite instanceof JvmTestSuite)) {
             return testSuite;
@@ -246,6 +258,7 @@ abstract public class JavaModulePackagingExtension {
             t.getOptions().convention(target.getOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getResources().from(getResources());
+            t.getTargetResources().from(target.getTargetResources());
             t.getVerbose().convention(getVerbose());
 
             t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
@@ -264,7 +277,7 @@ abstract public class JavaModulePackagingExtension {
 
         String targetAssembleLifecycle = "assemble" + capitalize(target.getName());
         if (!tasks.getNames().contains(targetAssembleLifecycle)) {
-            TaskProvider<Task> lifecycleTask = tasks.register(targetAssembleLifecycle, t -> {
+            tasks.register(targetAssembleLifecycle, t -> {
                 t.setGroup(BUILD_GROUP);
                 t.setDescription("Builds this project for " + target.getName());
             });

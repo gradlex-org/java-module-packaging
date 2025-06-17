@@ -18,7 +18,7 @@ class JavaModulePackagingTest extends Specification {
 
     def "can use plugin on #os with success=#success"() {
         given:
-        def taskToRun = ":app:assemble${label.capitalize()}"
+        def taskToRun = ":app:jpackage"
         def taskToCheck = ":app:jpackage${label.capitalize()}"
         def macosArch = System.getProperty('os.arch').contains('aarch') ? 'aarch64' : 'x86-64'
         appBuildFile << """

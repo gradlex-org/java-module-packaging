@@ -37,6 +37,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.process.ExecOperations;
+import org.gradle.process.ExecSpec;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -116,6 +117,9 @@ abstract public class Jpackage extends DefaultTask {
     abstract public ListProperty<String> getPackageTypes();
 
     @Input
+    abstract public Property<Boolean> getSingleStepPackaging();
+
+    @Input
     abstract public Property<Boolean> getVerbose();
 
     @OutputDirectory
@@ -141,7 +145,6 @@ abstract public class Jpackage extends DefaultTask {
         validateHostSystem(arch, os);
 
         Directory resourcesDir = getTempDirectory().get().dir("jpackage-resources");
-        Directory appImageParent = getTempDirectory().get().dir("app-image");
         //noinspection ResultOfMethodCallIgnored
         resourcesDir.getAsFile().mkdirs();
 
@@ -154,56 +157,22 @@ abstract public class Jpackage extends DefaultTask {
         String executableName = WINDOWS.equals(os) ? "jpackage.exe" : "jpackage";
         String jpackage = getJavaInstallation().get().getInstallationPath().file("bin/" + executableName).getAsFile().getAbsolutePath();
 
-        // create app image folder
-        getExec().exec(e -> {
-            e.commandLine(
-                    jpackage,
-                    "--type",
-                    "app-image",
-                    "--module",
-                    getMainModule().get(),
-                    "--resource-dir",
-                    resourcesDir.getAsFile().getPath(),
-                    "--app-version",
-                    getVersion().get(),
-                    "--module-path",
-                    getModulePath().getAsPath(),
-                    "--name",
-                    getApplicationName().get(),
-                    "--dest",
-                    appImageParent.getAsFile().getPath()
-            );
-            if (getApplicationDescription().isPresent()) {
-                e.args("--description", getApplicationDescription().get());
-            }
-            if (getVendor().isPresent()) {
-                e.args("--vendor", getVendor().get());
-            }
-            if (getCopyright().isPresent()) {
-                e.args("--copyright", getCopyright().get());
-            }
-            for (String javaOption : getJavaOptions().get()) {
-                e.args("--java-options", javaOption);
-            }
-            for (String javaOption : getJlinkOptions().get()) {
-                e.args("--jlink-options", javaOption);
-            }
-            if (!getAddModules().get().isEmpty()) {
-                e.args("--add-modules", String.join(",", getAddModules().get()));
-            }
-            if (getVerbose().get()) {
-                e.args("--verbose");
-            }
-        });
+        Directory appImageParent = getTempDirectory().get().dir("app-image");
+        File appImageFolder;
+        if (getSingleStepPackaging().get()) {
+             appImageFolder = appImageParent.dir(getName()).getAsFile();
+        } else {
+            performAppImageStep(jpackage, resourcesDir, appImageParent);
+            appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
+        }
 
-        File appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
         File appRootFolder;
         if (os.contains("macos")) {
-            appRootFolder  = new File(appImageFolder, "Contents");
+            appRootFolder = new File(appImageFolder, "Contents");
         } else if (os.contains("windows")) {
-            appRootFolder  = appImageFolder;
+            appRootFolder = appImageFolder;
         } else {
-            appRootFolder  = new File(appImageFolder, "lib");
+            appRootFolder = new File(appImageFolder, "lib");
         }
 
         // copy additional resource into app-image folder
@@ -220,11 +189,19 @@ abstract public class Jpackage extends DefaultTask {
                             jpackage,
                             "--type",
                             packageType,
-                            "--app-image",
-                            appImageFolder.getPath(),
+                            "--app-version",
+                            getVersion().get(),
                             "--dest",
                             getDestination().get().getAsFile().getPath()
                     );
+                    if (getSingleStepPackaging().get()) {
+                        configureJPackageArguments(e, resourcesDir);
+                        for (File appContent : requireNonNull(appRootFolder.listFiles())) {
+                            e.args("--app-content", appContent.getPath());
+                        }
+                    } else {
+                        e.args("--app-image", appImageFolder.getPath());
+                    }
                     for (String option : getOptions().get()) {
                         e.args(option);
                     }
@@ -232,6 +209,55 @@ abstract public class Jpackage extends DefaultTask {
         );
 
         generateChecksums();
+    }
+
+    private void performAppImageStep(String jpackage, Directory resourcesDir, Directory appImageParent) {
+        getExec().exec(e -> {
+            e.commandLine(
+                    jpackage,
+                    "--type",
+                    "app-image",
+                    "--dest",
+                    appImageParent.getAsFile().getPath()
+            );
+            configureJPackageArguments(e, resourcesDir);
+        });
+    }
+
+    private void configureJPackageArguments(ExecSpec e, Directory resourcesDir) {
+        e.args(
+                "--module",
+                getMainModule().get(),
+                "--resource-dir",
+                resourcesDir.getAsFile().getPath(),
+                "--app-version",
+                getVersion().get(),
+                "--module-path",
+                getModulePath().getAsPath(),
+                "--name",
+                getApplicationName().get()
+        );
+        if (getApplicationDescription().isPresent()) {
+            e.args("--description", getApplicationDescription().get());
+        }
+        if (getVendor().isPresent()) {
+            e.args("--vendor", getVendor().get());
+        }
+        if (getCopyright().isPresent()) {
+            e.args("--copyright", getCopyright().get());
+        }
+        for (String javaOption : getJavaOptions().get()) {
+            e.args("--java-options", javaOption);
+        }
+        for (String javaOption : getJlinkOptions().get()) {
+            e.args("--jlink-options", javaOption);
+        }
+        if (!getAddModules().get().isEmpty()) {
+            e.args("--add-modules", String.join(",", getAddModules().get()));
+        }
+        if (getVerbose().get()) {
+            e.args("--verbose");
+        }
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

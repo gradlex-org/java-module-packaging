@@ -45,8 +45,10 @@ public class HostIdentification {
     }
 
     public static boolean isHostTarget(Target target) {
-        return target.getOperatingSystem().get().equals(hostOs())
-                &&  target.getArchitecture().get().equals(normalizeArch(hostArch()));
+        return target.getOperatingSystem().isPresent()
+                && target.getArchitecture().isPresent()
+                && target.getOperatingSystem().get().equals(hostOs())
+                && target.getArchitecture().get().equals(normalizeArch(hostArch()));
     }
 
     private static String hostOs() {

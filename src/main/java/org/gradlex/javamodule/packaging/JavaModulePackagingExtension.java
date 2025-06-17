@@ -258,6 +258,7 @@ abstract public class JavaModulePackagingExtension {
             t.getAddModules().convention(getAddModules());
             t.getOptions().convention(target.getOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
+            t.getSingleStepPackaging().convention(target.getSingleStepPackaging());
             t.getResources().from(getResources());
             t.getTargetResources().from(target.getTargetResources());
             t.getVerbose().convention(getVerbose());

@@ -34,9 +34,12 @@ abstract public class Target {
 
     abstract public ConfigurableFileCollection getTargetResources();
 
+    abstract public Property<Boolean> getSingleStepPackaging();
+
     @Inject
     public Target(String name) {
         this.name = name;
+        getSingleStepPackaging().convention(false);
     }
 
     public String getName() {

@@ -24,6 +24,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
+import org.gradlex.javamodule.packaging.internal.HostIdentification;
 
 import javax.inject.Inject;
 
@@ -50,14 +51,6 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         javaModulePackaging.getJpackageResources().convention(project.provider(() ->
                 project.getLayout().getProjectDirectory().dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
         javaModulePackaging.getVerbose().convention(false);
-
-        configureConventionsForCurrentHost();
-    }
-
-    private void configureConventionsForCurrentHost() {
-        // A few conveniences for local development
-        
-
-
+        javaModulePackaging.primaryTarget(HostIdentification.hostTarget(project.getObjects()));
     }
 }

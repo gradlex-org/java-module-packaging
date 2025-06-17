@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
-import static org.gradlex.javamodule.packaging.internal.Validator.validateHostSystem;
+import static org.gradlex.javamodule.packaging.internal.HostIdentification.validateHostSystem;
 
 @CacheableTask
 abstract public class Jpackage extends DefaultTask {

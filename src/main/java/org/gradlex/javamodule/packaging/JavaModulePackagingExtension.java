@@ -48,6 +48,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.nativeplatform.MachineArchitecture;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.gradle.testing.base.TestSuite;
+import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
 import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
@@ -274,15 +275,21 @@ abstract public class JavaModulePackagingExtension {
             t.setJvmArgs(application.getApplicationDefaultJvmArgs());
             t.classpath(tasks.named("jar"), runtimeClasspath);
         });
+        maybeAddJpackageLifecycleTask(tasks, target, jpackage);
+    }
 
-        String targetAssembleLifecycle = "assemble" + capitalize(target.getName());
-        if (!tasks.getNames().contains(targetAssembleLifecycle)) {
-            tasks.register(targetAssembleLifecycle, t -> {
+    private void maybeAddJpackageLifecycleTask(TaskContainer tasks, Target target, TaskProvider<Jpackage> jpackage) {
+        // if a task already exists, do nothing to avoid conflciting with other plugins
+        if (tasks.getNames().contains("jpackage")) {
+            return;
+        }
+        if (HostIdentification.isHostTarget(target)) {
+            tasks.register("jpackage", t -> {
                 t.setGroup(BUILD_GROUP);
-                t.setDescription("Builds this project for " + target.getName());
+                t.setDescription("Build the package for the current host system");
+                t.dependsOn(jpackage);
             });
         }
-        tasks.named(targetAssembleLifecycle, t -> t.dependsOn(jpackage));
     }
 
     private Configuration maybeCreateInternalConfiguration() {

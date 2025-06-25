@@ -1,5 +1,4 @@
 plugins {
-    id("groovy")
     id("org.gradlex.internal.plugin-publish-conventions") version "0.6"
 }
 
@@ -7,14 +6,11 @@ group = "org.gradlex"
 version = "1.0.1"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
-dependencies {
-    testImplementation("org.spockframework:spock-core:2.1-groovy-3.0")
-    testImplementation("org.gradle.exemplar:samples-check:1.0.3")
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+tasks.compileJava {
+    options.release = 8
 }
 
 pluginPublishConventions {
@@ -31,7 +27,14 @@ pluginPublishConventions {
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
-    maxParallelForks = 4
+testing.suites.named<JvmTestSuite>("test") {
+    useJUnitJupiter()
+    dependencies {
+        implementation("org.assertj:assertj-core:3.27.3")
+    }
+    targets.configureEach {
+        testTask {
+            maxParallelForks = 4
+        }
+    }
 }

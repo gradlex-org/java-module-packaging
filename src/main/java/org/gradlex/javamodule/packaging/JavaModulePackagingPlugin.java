@@ -16,7 +16,6 @@
 
 package org.gradlex.javamodule.packaging;
 
-import org.gradle.api.NonNullApi;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.SourceDirectorySet;
@@ -28,7 +27,6 @@ import org.gradle.util.GradleVersion;
 import javax.inject.Inject;
 
 @SuppressWarnings("unused")
-@NonNullApi
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
 
     @Inject

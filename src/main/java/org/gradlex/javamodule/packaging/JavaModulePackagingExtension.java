@@ -18,7 +18,6 @@ package org.gradlex.javamodule.packaging;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -61,7 +60,6 @@ import static org.gradle.nativeplatform.OperatingSystemFamily.MACOS;
 import static org.gradle.nativeplatform.OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE;
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
 
-@NonNullApi
 abstract public class JavaModulePackagingExtension {
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";

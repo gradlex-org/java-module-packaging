@@ -42,14 +42,10 @@ public class GradleBuild {
     public static final String GRADLE_VERSION_UNDER_TEST = System.getProperty("gradleVersionUnderTest");
 
     public GradleBuild() {
-        this(false, createBuildTmpDir());
+        this(createBuildTmpDir());
     }
 
-    public GradleBuild(boolean withHelpTasks) {
-        this(withHelpTasks, createBuildTmpDir());
-    }
-
-    public GradleBuild(boolean withHelpTasks, Path dir) {
+    public GradleBuild(Path dir) {
         this.projectDir = new Directory(dir);
         this.settingsFile = file("settings.gradle.kts");
         this.appBuildFile = file("app/build.gradle.kts");
@@ -74,6 +70,9 @@ public class GradleBuild {
                 id("application")
             }
             group = "org.example"
+            java {
+                toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+            }
             application {
                 mainModule.set("org.example.app")
                 mainClass.set("org.example.app.Main")

@@ -6,7 +6,7 @@ group = "org.gradlex"
 version = "1.0.1"
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
 tasks.compileJava {
@@ -29,6 +29,15 @@ pluginPublishConventions {
 
 testing.suites.named<JvmTestSuite>("test") {
     useJUnitJupiter()
+    listOf("7.4", "7.6.5", "8.0.2", "8.14.2").forEach { gradleVersionUnderTest ->
+        targets.register("test${gradleVersionUnderTest}") {
+            testTask {
+                group = LifecycleBasePlugin.VERIFICATION_GROUP
+                description = "Runs tests against Gradle $gradleVersionUnderTest"
+                systemProperty("gradleVersionUnderTest", gradleVersionUnderTest)
+            }
+        }
+    }
     dependencies {
         implementation("org.assertj:assertj-core:3.27.3")
     }

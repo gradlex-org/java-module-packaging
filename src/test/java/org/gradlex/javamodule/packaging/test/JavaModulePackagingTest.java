@@ -53,16 +53,16 @@ class JavaModulePackagingTest {
                     version = "1.0"
                     javaModulePackaging {
                         target("macos") {
-                            operatingSystem = "macos"
-                            architecture = "%s"
+                            operatingSystem.set("macos")
+                            architecture.set("%s")
                         }
                         target("ubuntu") {
-                            operatingSystem = "linux"
-                            architecture = "x86-64"
+                            operatingSystem.set("linux")
+                            architecture.set("x86-64")
                         }
                         target("windows") {
-                            operatingSystem = "windows"
-                            architecture = "x86-64"
+                            operatingSystem.set("windows")
+                            architecture.set("x86-64")
                         }
                     }
                 """.formatted(macosArch));

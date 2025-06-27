@@ -125,6 +125,10 @@ abstract public class Jpackage extends DefaultTask {
     @OutputDirectory
     abstract public DirectoryProperty getDestination();
 
+    /**
+     * To copy resources before adding them. This allows ressource filtering via Gradle
+     * FileCollection and FileTree APIs.
+     */
     @Internal
     abstract public DirectoryProperty getTempDirectory();
 
@@ -157,33 +161,30 @@ abstract public class Jpackage extends DefaultTask {
         String executableName = WINDOWS.equals(os) ? "jpackage.exe" : "jpackage";
         String jpackage = getJavaInstallation().get().getInstallationPath().file("bin/" + executableName).getAsFile().getAbsolutePath();
 
-        Directory appImageParent = getTempDirectory().get().dir("app-image");
-        File appImageFolder;
+        File appContentTmpFolder = getTempDirectory().get().dir("app-content").getAsFile();
+
+        // build 'app-image' target if required (either needed for the next step or explicitly requested)
+        if (!getSingleStepPackaging().get() || getPackageTypes().get().contains("app-image")) {
+            performAppImageStep(jpackage, resourcesDir);
+            File appImageFolder = appImageFolder();
+            File appRootFolder;
+            if (os.contains("macos")) {
+                appRootFolder = new File(appImageFolder, "Contents");
+            } else if (os.contains("windows")) {
+                appRootFolder = appImageFolder;
+            } else {
+                appRootFolder = new File(appImageFolder, "lib");
+            }
+            copyAdditionalRessourcesToImageFolder(appRootFolder);
+        }
+
         if (getSingleStepPackaging().get()) {
-             appImageFolder = appImageParent.dir(getName()).getAsFile();
-        } else {
-            performAppImageStep(jpackage, resourcesDir, appImageParent);
-            appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
+            // an isolated folder which is later inserted via '--app-content' parameter
+            copyAdditionalRessourcesToImageFolder(appContentTmpFolder);
         }
-
-        File appRootFolder;
-        if (os.contains("macos")) {
-            appRootFolder = new File(appImageFolder, "Contents");
-        } else if (os.contains("windows")) {
-            appRootFolder = appImageFolder;
-        } else {
-            appRootFolder = new File(appImageFolder, "lib");
-        }
-
-        // copy additional resource into app-image folder
-        getFiles().copy(c -> {
-            c.into(appRootFolder);
-            c.from(getTargetResources());
-            c.from(getResources(), to -> to.into("app")); // 'app' is the folder Java loads resources from at runtime
-        });
 
         // package with additional resources
-        getPackageTypes().get().forEach(packageType ->
+        getPackageTypes().get().stream().filter(t -> !"app-image".equals(t)).forEach(packageType ->
                 getExec().exec(e -> {
                     e.commandLine(
                             jpackage,
@@ -196,13 +197,13 @@ abstract public class Jpackage extends DefaultTask {
                     );
                     if (getSingleStepPackaging().get()) {
                         configureJPackageArguments(e, resourcesDir);
-                        if (appRootFolder.exists()) {
-                            for (File appContent : requireNonNull(appRootFolder.listFiles())) {
+                        if (appContentTmpFolder.exists()) {
+                            for (File appContent : requireNonNull(appContentTmpFolder.listFiles())) {
                                 e.args("--app-content", appContent.getPath());
                             }
                         }
                     } else {
-                        e.args("--app-image", appImageFolder.getPath());
+                        e.args("--app-image", appImageFolder().getPath());
                     }
                     for (String option : getOptions().get()) {
                         e.args(option);
@@ -213,14 +214,28 @@ abstract public class Jpackage extends DefaultTask {
         generateChecksums();
     }
 
-    private void performAppImageStep(String jpackage, Directory resourcesDir, Directory appImageParent) {
+    private File appImageFolder() {
+        return Arrays.stream(requireNonNull(getDestination().get().getAsFile().listFiles()))
+                .filter(File::isDirectory).findFirst().get();
+    }
+
+    private void copyAdditionalRessourcesToImageFolder(File appRootFolder) {
+        // copy additional resource into the app-image folder
+        getFiles().copy(c -> {
+            c.into(appRootFolder);
+            c.from(getTargetResources());
+            c.from(getResources(), to -> to.into("app")); // 'app' is the folder Java loads resources from at runtime
+        });
+    }
+
+    private void performAppImageStep(String jpackage, Directory resourcesDir) {
         getExec().exec(e -> {
             e.commandLine(
                     jpackage,
                     "--type",
                     "app-image",
                     "--dest",
-                    appImageParent.getAsFile().getPath()
+                    getDestination().get().getAsFile().getPath()
             );
             configureJPackageArguments(e, resourcesDir);
         });

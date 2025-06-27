@@ -196,8 +196,10 @@ abstract public class Jpackage extends DefaultTask {
                     );
                     if (getSingleStepPackaging().get()) {
                         configureJPackageArguments(e, resourcesDir);
-                        for (File appContent : requireNonNull(appRootFolder.listFiles())) {
-                            e.args("--app-content", appContent.getPath());
+                        if (appRootFolder.exists()) {
+                            for (File appContent : requireNonNull(appRootFolder.listFiles())) {
+                                e.args("--app-content", appContent.getPath());
+                            }
                         }
                     } else {
                         e.args("--app-image", appImageFolder.getPath());

@@ -204,9 +204,9 @@ abstract public class Jpackage extends DefaultTask {
                         }
                     } else {
                         e.args("--app-image", appImageFolder().getPath());
-                    }
-                    for (String option : getOptions().get()) {
-                        e.args(option);
+                        for (String option : getOptions().get()) {
+                            e.args(option);
+                        }
                     }
                 })
         );
@@ -271,6 +271,9 @@ abstract public class Jpackage extends DefaultTask {
         }
         if (!getAddModules().get().isEmpty()) {
             e.args("--add-modules", String.join(",", getAddModules().get()));
+        }
+        for (String option : getOptions().get()) {
+            e.args(option);
         }
         if (getVerbose().get()) {
             e.args("--verbose");

@@ -31,6 +31,7 @@ abstract public class Target {
 
     abstract public ListProperty<String> getPackageTypes();
     abstract public ListProperty<String> getOptions();
+    abstract public ListProperty<String> getAppImageOptions();
 
     abstract public ConfigurableFileCollection getTargetResources();
 

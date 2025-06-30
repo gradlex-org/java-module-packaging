@@ -256,6 +256,7 @@ abstract public class JavaModulePackagingExtension {
             t.getJlinkOptions().convention(getJlinkOptions());
             t.getAddModules().convention(getAddModules());
             t.getOptions().convention(target.getOptions());
+            t.getAppImageOptions().convention(target.getAppImageOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getSingleStepPackaging().convention(target.getSingleStepPackaging());
             t.getResources().from(getResources());

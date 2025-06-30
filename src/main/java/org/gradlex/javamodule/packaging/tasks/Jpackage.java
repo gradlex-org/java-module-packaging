@@ -114,6 +114,9 @@ abstract public class Jpackage extends DefaultTask {
     abstract public ListProperty<String> getOptions();
 
     @Input
+    abstract public ListProperty<String> getAppImageOptions();
+
+    @Input
     abstract public ListProperty<String> getPackageTypes();
 
     @Input
@@ -238,6 +241,9 @@ abstract public class Jpackage extends DefaultTask {
                     getDestination().get().getAsFile().getPath()
             );
             configureJPackageArguments(e, resourcesDir);
+            for (String option : getAppImageOptions().get()) {
+                e.args(option);
+            }
         });
     }
 

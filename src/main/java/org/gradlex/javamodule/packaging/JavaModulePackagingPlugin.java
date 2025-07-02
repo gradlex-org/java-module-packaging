@@ -16,7 +16,6 @@
 
 package org.gradlex.javamodule.packaging;
 
-import org.gradle.api.NonNullApi;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.SourceDirectorySet;
@@ -29,7 +28,6 @@ import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import javax.inject.Inject;
 
 @SuppressWarnings("unused")
-@NonNullApi
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
 
     @Inject

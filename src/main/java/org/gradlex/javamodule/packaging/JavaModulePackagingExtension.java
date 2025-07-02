@@ -21,7 +21,6 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.attributes.Attribute;
@@ -257,6 +256,7 @@ abstract public class JavaModulePackagingExtension {
             t.getJlinkOptions().convention(getJlinkOptions());
             t.getAddModules().convention(getAddModules());
             t.getOptions().convention(target.getOptions());
+            t.getAppImageOptions().convention(target.getAppImageOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getSingleStepPackaging().convention(target.getSingleStepPackaging());
             t.getResources().from(getResources());

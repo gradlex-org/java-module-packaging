@@ -53,11 +53,6 @@ public class GradleBuild {
         this.libBuildFile = file("lib/build.gradle.kts");
         this.libModuleInfoFile = file("lib/src/main/java/module-info.java");
 
-        // https://github.com/gradlex-org/java-module-packaging/issues/56 ?
-        projectDir.dir("app/src/main/resourcesPackage/windows");
-        projectDir.dir("app/src/main/resourcesPackage/macos");
-        projectDir.dir("app/src/main/resourcesPackage/linux");
-
         settingsFile.writeText("""
             dependencyResolutionManagement { repositories.mavenCentral() }
             includeBuild(".")

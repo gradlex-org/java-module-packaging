@@ -248,7 +248,7 @@ abstract public class JavaModulePackagingExtension {
             t.getModulePath().from(runtimeClasspath);
 
             t.getApplicationName().convention(getApplicationName());
-            t.getJpackageResources().convention(getJpackageResources().dir(target.getOperatingSystem()));
+            t.getJpackageResources().from(getJpackageResources().dir(target.getOperatingSystem()));
             t.getApplicationDescription().convention(getApplicationDescription());
             t.getVendor().convention(getVendor());
             t.getCopyright().convention(getCopyright());

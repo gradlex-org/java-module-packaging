@@ -26,7 +26,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
@@ -81,9 +80,9 @@ abstract public class Jpackage extends DefaultTask {
     @Optional
     abstract public Property<String> getApplicationDescription();
 
-    @InputDirectory
+    @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public DirectoryProperty getJpackageResources();
+    abstract public ConfigurableFileCollection getJpackageResources();
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)

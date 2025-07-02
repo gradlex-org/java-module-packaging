@@ -21,6 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.currentTarget;
+import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnLinux;
+import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnMacos;
+import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnWindows;
 
 /**
  * Tests for adding custom resources to the image/package.
@@ -97,23 +101,31 @@ class JavaModulePackagingResourcesTest {
         // Use 'src/main/resourcesPackage', which is the convention
 
         // resources that are not known - will be ignored
-        build.projectDir.file("app/src/main/resourcesPackage/windows/dummy.txt").writeText("");
-        build.projectDir.file("app/src/main/resourcesPackage/macos/dummy.txt").writeText("");
         build.projectDir.file("app/src/main/resourcesPackage/linux/dummy.txt").writeText("");
+        build.projectDir.file("app/src/main/resourcesPackage/macos/dummy.txt").writeText("");
+        build.projectDir.file("app/src/main/resourcesPackage/windows/dummy.txt").writeText("");
 
         // icons will be used
-        build.projectDir.file("app/src/main/resourcesPackage/windows/icon.png").create();
+        build.projectDir.file("app/src/main/resourcesPackage/linux/icon.png").create();
         build.projectDir.file("app/src/main/resourcesPackage/macos/icon.icns").create();
-        build.projectDir.file("app/src/main/resourcesPackage/linux/icon.ico").create();
+        build.projectDir.file("app/src/main/resourcesPackage/windows/icon.ico").create();
 
         build.build(":app:jpackage");
 
-        // Intermediate location to collect files
-        assertThat(build.file("app/build/tmp/jpackage/macos/jpackage-resources/dummy.txt").getAsPath()).exists();
-        assertThat(build.file("app/build/tmp/jpackage/macos/jpackage-resources/app.icns").getAsPath()).exists();
+        String icon = "app.icns";
+        if (runsOnLinux()) icon = "app.png";
+        if (runsOnWindows()) icon = "app.ico";
 
-        // Icons end up in Resources
-        assertThat(build.file("app/build/packages/macos/app.app/Contents/Resources/app.icns").getAsPath()).hasSize(0);
+        // Intermediate location to collect files
+        assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/dummy.txt".formatted(currentTarget()))
+                .getAsPath()).exists();
+        assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/%s".formatted(currentTarget(), icon))
+                .getAsPath()).exists();
+
+        // icons end up in Resources
+        String resourcesFolder = "";
+        if (runsOnMacos()) resourcesFolder = "Resources/";
+        assertThat(build.appContentsFolder().file(resourcesFolder + icon).getAsPath()).hasSize(0);
     }
 
     @Test
@@ -130,8 +142,7 @@ class JavaModulePackagingResourcesTest {
 
         build.build(":app:jpackage");
 
-        // Icons end up in Resources
-        assertThat(build.file("app/build/packages/macos/app.app/Contents/app/dummy.txt").getAsPath()).exists();
+        assertThat(build.appContentsFolder().file("app/dummy.txt").getAsPath()).exists();
     }
 
     @Test
@@ -152,7 +163,6 @@ class JavaModulePackagingResourcesTest {
 
         build.build(":app:jpackage");
 
-        // Icons end up in Resources
-        assertThat(build.file("app/build/packages/macos/app.app/Contents/customFolder/dummy.txt").getAsPath()).exists();
+        assertThat(build.appContentsFolder().file("customFolder/dummy.txt").getAsPath()).exists();
     }
 }

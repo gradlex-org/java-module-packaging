@@ -96,7 +96,7 @@ class JavaModulePackagingOptionsTest {
 
         build.build(":app:jpackage");
 
-        assertThat(build.file("app/build/packages/macos/app.app/Contents/app/app.cfg").getAsPath()).hasContent("""
+        assertThat(build.appContentsFolder().file("app/app.cfg").getAsPath()).hasContent("""
             [Application]
             app.mainmodule=org.example.app/org.example.app.Main
             
@@ -133,7 +133,7 @@ class JavaModulePackagingOptionsTest {
 
         var result = build.build(":app:jpackage");
 
-        assertThat(result.getOutput()).contains("Creating app package: app.app in");
+        assertThat(result.getOutput()).contains("Creating app package: ");
     }
 
     @Test
@@ -199,9 +199,8 @@ class JavaModulePackagingOptionsTest {
 
         build.build(":app:jpackage");
 
-        assertThat(build.file("app/build/packages/macos/app-1.0.dmg").getAsPath()).exists();
-        assertThat(build.file("app/build/packages/macos/app-1.0.dmg.sha256").getAsPath()).exists();
-        assertThat(build.projectDir.dir("app/build/packages/macos").getAsPath()).isDirectoryNotContaining(
-                f -> f.toFile().isDirectory());
+        assertThat(build.appImageFolder().getAsPath()).isDirectoryContaining(f ->
+                f.getFileName().toString().contains("app") && f.getFileName().toString().contains("1.0"));
+        assertThat(build.appImageFolder().getAsPath()).isDirectoryNotContaining(f -> f.toFile().isDirectory());
     }
 }

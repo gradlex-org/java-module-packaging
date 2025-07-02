@@ -20,6 +20,7 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.attributes.Attribute;
@@ -65,6 +66,7 @@ import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
 abstract public class JavaModulePackagingExtension {
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";
+    private static final String JPACKAGE = "jpackage";
 
     abstract public Property<String> getApplicationName();
     abstract public Property<String> getApplicationVersion();
@@ -236,7 +238,7 @@ abstract public class JavaModulePackagingExtension {
         JavaPluginExtension java = getProject().getExtensions().getByType(JavaPluginExtension.class);
         JavaApplication application = getProject().getExtensions().getByType(JavaApplication.class);
 
-        TaskProvider<Jpackage> jpackage = tasks.register("jpackage" + capitalize(target.getName()), Jpackage.class, t -> {
+        TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
             t.getJavaInstallation().convention(getJavaToolchains().compilerFor(java.getToolchain()).get().getMetadata());
             t.getOperatingSystem().convention(target.getOperatingSystem());
             t.getArchitecture().convention(target.getArchitecture());
@@ -277,18 +279,22 @@ abstract public class JavaModulePackagingExtension {
         maybeAddJpackageLifecycleTask(tasks, target, jpackage);
     }
 
-    private void maybeAddJpackageLifecycleTask(TaskContainer tasks, Target target, TaskProvider<Jpackage> jpackage) {
+    private void maybeAddJpackageLifecycleTask(TaskContainer tasks, Target target, TaskProvider<Jpackage> targetJpackage) {
         // if a task already exists, do nothing to avoid conflciting with other plugins
-        if (tasks.getNames().contains("jpackage")) {
-            return;
-        }
-        if (HostIdentification.isHostTarget(target)) {
-            tasks.register("jpackage", t -> {
+        TaskProvider<Task> jpackage;
+        if (tasks.getNames().contains(JPACKAGE)) {
+            jpackage = tasks.named(JPACKAGE);
+        } else {
+            jpackage = tasks.register(JPACKAGE, t -> {
                 t.setGroup(BUILD_GROUP);
                 t.setDescription("Build the package for the current host system");
-                t.dependsOn(jpackage);
             });
         }
+        jpackage.configure(t -> {
+            if (HostIdentification.isHostTarget(target)) {
+                t.dependsOn(targetJpackage);
+            }
+        });
     }
 
     private Configuration maybeCreateInternalConfiguration() {

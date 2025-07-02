@@ -32,7 +32,10 @@ import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnLi
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnMacos;
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnWindows;
 
-class JavaModulePackagingTest {
+/**
+ * Tests that run on all operating systems and assert success or failure depending on the system they run on.
+ */
+class JavaModulePackagingSmokeTest {
 
     GradleBuild build = new GradleBuild();
 

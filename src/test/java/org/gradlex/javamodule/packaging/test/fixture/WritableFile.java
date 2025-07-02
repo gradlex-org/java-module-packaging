@@ -43,6 +43,10 @@ public class WritableFile {
         return this;
     }
 
+    public void create() {
+        Io.unchecked(() -> Files.createFile(file));
+    }
+
     public WritableFile delete() {
         Io.unchecked(file, Files::delete);
         return this;

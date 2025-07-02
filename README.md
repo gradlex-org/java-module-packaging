@@ -80,32 +80,56 @@ javaModulePackaging {
         operatingSystem = OperatingSystemFamily.WINDOWS
         architecture = MachineArchitecture.X86_64
     }
-
-    primaryTarget(target("macos-14"))
 }
 ```
 
 You can now run _target-specific_ builds:
 
-```
-./gradlew assembleWindows
+```shell
+./gradlew jpackageWindows
 ```
 
-```
+```shell
 ./gradlew runWindows
 ```
 
-There are some additional configuration options that can be used:
+Or, for convenience, let the plugin pick the target fitting the machine you run on:
 
+```shell
+./gradlew jpackage
 ```
+
+```shell
+./gradlew run
+```
+
+There are some additional configuration options that can be used if needed.
+All options have a default. Only configure what you need in addition.
+
+```kotlin
 javaModulePackaging {
-    applicationName();
-    applicationVersion();
-    applicationDescription = ""
-    vendor = "My Company" 
-    copyright = "(c) My Company" 
-    jpackageResources.setFrom(...);
-    resources.from(...)
+  // global options
+  applicationName = "app" // defaults to project name
+  applicationVersion = "1.0" // defaults to project version
+  applicationDescription = "Awesome App"
+  vendor = "My Company" 
+  copyright = "(c) My Company" 
+  jlinkOptions.addAll("--no-header-files", "--no-man-pages", "--bind-services")
+  addModules.addAll("additional.module.to.include")
+  jpackageResources = layout.projectDirectory.dir("res") // defaults to 'src/main/resourcesPackage'
+  resources.from(layout.projectDirectory.dir("extra-res"))
+  verbose = false
+
+  // target specific options
+  targetsWithOs("windows") {
+    options.addAll("--win-dir-chooser", "--win-shortcut", "--win-menu")
+    appImageOptions.addAll("--win-console")
+    targetResources.from("windows-res")
+  }
+  targetsWithOs("macos") {
+    options.addAll("--mac-sign", "--mac-signing-key-user-name", "gradlex")
+    singleStepPackaging = true
+  }
 }
 ```
 

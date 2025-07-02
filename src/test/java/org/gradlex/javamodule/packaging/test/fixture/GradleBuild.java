@@ -180,7 +180,9 @@ public class GradleBuild {
     }
 
     public static String hostOs() {
-        return System.getProperty("os.name").replace(" ", "").toLowerCase();
+        return System.getProperty("os.name").toLowerCase()
+                .replace(" ", "")
+                .replace("macosx", "macos");
     }
 
 }

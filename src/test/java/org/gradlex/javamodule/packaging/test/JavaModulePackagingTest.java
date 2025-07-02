@@ -46,7 +46,7 @@ class JavaModulePackagingTest {
     @ParameterizedTest
     @MethodSource("testTargets")
     void can_use_plugin(String label, String os, boolean success) {
-        var taskToRun = ":app:assemble" + capitalize(label);
+        var taskToRun = ":app:jpackage" + capitalize(label);
         var taskToCheck = ":app:jpackage" + capitalize(label);
         var macosArch = System.getProperty("os.arch").contains("aarch") ? "aarch64" : "x86-64";
         build.appBuildFile.appendText("""

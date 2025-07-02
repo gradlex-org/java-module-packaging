@@ -23,6 +23,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
+import org.gradlex.javamodule.packaging.internal.HostIdentification;
 
 import javax.inject.Inject;
 
@@ -47,5 +48,7 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         javaModulePackaging.getApplicationVersion().convention(project.provider(() -> (String) project.getVersion()));
         javaModulePackaging.getJpackageResources().convention(project.provider(() ->
                 project.getLayout().getProjectDirectory().dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
+        javaModulePackaging.getVerbose().convention(false);
+        javaModulePackaging.primaryTarget(HostIdentification.hostTarget(project.getObjects()));
     }
 }

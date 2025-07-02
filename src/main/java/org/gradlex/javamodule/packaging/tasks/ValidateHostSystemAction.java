@@ -21,7 +21,7 @@ import org.gradle.api.Task;
 
 import java.util.Map;
 
-import static org.gradlex.javamodule.packaging.internal.Validator.validateHostSystem;
+import static org.gradlex.javamodule.packaging.internal.HostIdentification.validateHostSystem;
 
 public class ValidateHostSystemAction implements Action<Task> {
     @Override

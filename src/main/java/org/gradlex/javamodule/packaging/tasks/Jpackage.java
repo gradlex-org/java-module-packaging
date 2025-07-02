@@ -26,7 +26,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
@@ -37,6 +36,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.process.ExecOperations;
+import org.gradle.process.ExecSpec;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
-import static org.gradlex.javamodule.packaging.internal.Validator.validateHostSystem;
+import static org.gradlex.javamodule.packaging.internal.HostIdentification.validateHostSystem;
 
 @CacheableTask
 abstract public class Jpackage extends DefaultTask {
@@ -80,13 +80,17 @@ abstract public class Jpackage extends DefaultTask {
     @Optional
     abstract public Property<String> getApplicationDescription();
 
-    @InputDirectory
+    @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public DirectoryProperty getJpackageResources();
+    abstract public ConfigurableFileCollection getJpackageResources();
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     abstract public ConfigurableFileCollection getResources();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract public ConfigurableFileCollection getTargetResources();
 
     @Input
     @Optional
@@ -100,14 +104,33 @@ abstract public class Jpackage extends DefaultTask {
     abstract public ListProperty<String> getJavaOptions();
 
     @Input
+    abstract public ListProperty<String> getJlinkOptions();
+
+    @Input
+    abstract public ListProperty<String> getAddModules();
+
+    @Input
     abstract public ListProperty<String> getOptions();
+
+    @Input
+    abstract public ListProperty<String> getAppImageOptions();
 
     @Input
     abstract public ListProperty<String> getPackageTypes();
 
+    @Input
+    abstract public Property<Boolean> getSingleStepPackaging();
+
+    @Input
+    abstract public Property<Boolean> getVerbose();
+
     @OutputDirectory
     abstract public DirectoryProperty getDestination();
 
+    /**
+     * To copy resources before adding them. This allows ressource filtering via Gradle
+     * FileCollection and FileTree APIs.
+     */
     @Internal
     abstract public DirectoryProperty getTempDirectory();
 
@@ -128,7 +151,6 @@ abstract public class Jpackage extends DefaultTask {
         validateHostSystem(arch, os);
 
         Directory resourcesDir = getTempDirectory().get().dir("jpackage-resources");
-        Directory appImageParent = getTempDirectory().get().dir("app-image");
         //noinspection ResultOfMethodCallIgnored
         resourcesDir.getAsFile().mkdirs();
 
@@ -141,67 +163,50 @@ abstract public class Jpackage extends DefaultTask {
         String executableName = WINDOWS.equals(os) ? "jpackage.exe" : "jpackage";
         String jpackage = getJavaInstallation().get().getInstallationPath().file("bin/" + executableName).getAsFile().getAbsolutePath();
 
-        // create app image folder
-        getExec().exec(e -> {
-            e.commandLine(
-                    jpackage,
-                    "--type",
-                    "app-image",
-                    "--module",
-                    getMainModule().get(),
-                    "--resource-dir",
-                    resourcesDir.getAsFile().getPath(),
-                    "--app-version",
-                    getVersion().get(),
-                    "--module-path",
-                    getModulePath().getAsPath(),
-                    "--name",
-                    getApplicationName().get(),
-                    "--dest",
-                    appImageParent.getAsFile().getPath()
-            );
-            if (getApplicationDescription().isPresent()) {
-                e.args("--description", getApplicationDescription().get());
-            }
-            if (getVendor().isPresent()) {
-                e.args("--vendor", getVendor().get());
-            }
-            if (getCopyright().isPresent()) {
-                e.args("--copyright", getCopyright().get());
-            }
-            for (String javaOption : getJavaOptions().get()) {
-                e.args("--java-options", javaOption);
-            }
-        });
+        File appContentTmpFolder = getTempDirectory().get().dir("app-content").getAsFile();
 
-        File appImageFolder = requireNonNull(appImageParent.getAsFile().listFiles())[0];
-        File appResourcesFolder;
-        if (os.contains("macos")) {
-            appResourcesFolder  = new File(appImageFolder, "Contents/app");
-        } else if (os.contains("windows")) {
-            appResourcesFolder  = new File(appImageFolder, "app");
-        } else {
-            appResourcesFolder  = new File(appImageFolder, "lib/app");
+        // build 'app-image' target if required (either needed for the next step or explicitly requested)
+        if (!getSingleStepPackaging().get() || getPackageTypes().get().contains("app-image")) {
+            performAppImageStep(jpackage, resourcesDir);
+            File appImageFolder = appImageFolder();
+            File appRootFolder;
+            if (os.contains("macos")) {
+                appRootFolder = new File(appImageFolder, "Contents");
+            } else if (os.contains("windows")) {
+                appRootFolder = appImageFolder;
+            } else {
+                appRootFolder = new File(appImageFolder, "lib");
+            }
+            copyAdditionalRessourcesToImageFolder(appRootFolder);
         }
 
-        // copy additional resource into app-image folder
-        getFiles().copy(c -> {
-            c.from(getResources());
-            c.into(appResourcesFolder);
-        });
+        if (getSingleStepPackaging().get()) {
+            // an isolated folder which is later inserted via '--app-content' parameter
+            copyAdditionalRessourcesToImageFolder(appContentTmpFolder);
+        }
 
         // package with additional resources
-        getPackageTypes().get().forEach(packageType ->
+        getPackageTypes().get().stream().filter(t -> !"app-image".equals(t)).forEach(packageType ->
                 getExec().exec(e -> {
                     e.commandLine(
                             jpackage,
                             "--type",
                             packageType,
-                            "--app-image",
-                            appImageFolder.getPath(),
+                            "--app-version",
+                            getVersion().get(),
                             "--dest",
                             getDestination().get().getAsFile().getPath()
                     );
+                    if (getSingleStepPackaging().get()) {
+                        configureJPackageArguments(e, resourcesDir);
+                        if (appContentTmpFolder.exists()) {
+                            for (File appContent : requireNonNull(appContentTmpFolder.listFiles())) {
+                                e.args("--app-content", appContent.getPath());
+                            }
+                        }
+                    } else {
+                        e.args("--app-image", appImageFolder().getPath());
+                    }
                     for (String option : getOptions().get()) {
                         e.args(option);
                     }
@@ -209,6 +214,72 @@ abstract public class Jpackage extends DefaultTask {
         );
 
         generateChecksums();
+    }
+
+    private File appImageFolder() {
+        return Arrays.stream(requireNonNull(getDestination().get().getAsFile().listFiles()))
+                .filter(File::isDirectory).findFirst().get();
+    }
+
+    private void copyAdditionalRessourcesToImageFolder(File appRootFolder) {
+        // copy additional resource into the app-image folder
+        getFiles().copy(c -> {
+            c.into(appRootFolder);
+            c.from(getTargetResources());
+            c.from(getResources(), to -> to.into("app")); // 'app' is the folder Java loads resources from at runtime
+        });
+    }
+
+    private void performAppImageStep(String jpackage, Directory resourcesDir) {
+        getExec().exec(e -> {
+            e.commandLine(
+                    jpackage,
+                    "--type",
+                    "app-image",
+                    "--dest",
+                    getDestination().get().getAsFile().getPath()
+            );
+            configureJPackageArguments(e, resourcesDir);
+            for (String option : getAppImageOptions().get()) {
+                e.args(option);
+            }
+        });
+    }
+
+    private void configureJPackageArguments(ExecSpec e, Directory resourcesDir) {
+        e.args(
+                "--module",
+                getMainModule().get(),
+                "--resource-dir",
+                resourcesDir.getAsFile().getPath(),
+                "--app-version",
+                getVersion().get(),
+                "--module-path",
+                getModulePath().getAsPath(),
+                "--name",
+                getApplicationName().get()
+        );
+        if (getApplicationDescription().isPresent()) {
+            e.args("--description", getApplicationDescription().get());
+        }
+        if (getVendor().isPresent()) {
+            e.args("--vendor", getVendor().get());
+        }
+        if (getCopyright().isPresent()) {
+            e.args("--copyright", getCopyright().get());
+        }
+        for (String javaOption : getJavaOptions().get()) {
+            e.args("--java-options", javaOption);
+        }
+        for (String javaOption : getJlinkOptions().get()) {
+            e.args("--jlink-options", javaOption);
+        }
+        if (!getAddModules().get().isEmpty()) {
+            e.args("--add-modules", String.join(",", getAddModules().get()));
+        }
+        if (getVerbose().get()) {
+            e.args("--verbose");
+        }
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

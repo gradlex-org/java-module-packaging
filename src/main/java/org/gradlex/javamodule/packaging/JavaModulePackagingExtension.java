@@ -18,6 +18,7 @@ package org.gradlex.javamodule.packaging;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -35,6 +36,7 @@ import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.jvm.JvmTestSuite;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
@@ -45,6 +47,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.nativeplatform.MachineArchitecture;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.gradle.testing.base.TestSuite;
+import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
 import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
@@ -63,14 +66,18 @@ import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
 abstract public class JavaModulePackagingExtension {
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";
+    private static final String JPACKAGE = "jpackage";
 
     abstract public Property<String> getApplicationName();
     abstract public Property<String> getApplicationVersion();
     abstract public Property<String> getApplicationDescription();
     abstract public Property<String> getVendor();
     abstract public Property<String> getCopyright();
+    abstract public ListProperty<String> getJlinkOptions();
+    abstract public ListProperty<String> getAddModules();
     abstract public DirectoryProperty getJpackageResources();
     abstract public ConfigurableFileCollection getResources();
+    abstract public Property<Boolean> getVerbose();
 
     private final NamedDomainObjectContainer<Target> targets = getObjects().domainObjectContainer(Target.class);
 
@@ -110,6 +117,16 @@ abstract public class JavaModulePackagingExtension {
     }
 
     /**
+     * Configure all targets for the given OS.
+     */
+    @SuppressWarnings("unused")
+    public void targetsWithOs(String operatingSystem, Action<? super Target> action) {
+        NamedDomainObjectSet<Target> matches = targets.matching(t ->
+                t.getOperatingSystem().isPresent() && t.getOperatingSystem().get().equals(operatingSystem));
+        matches.all(action);
+    }
+
+    /**
      * Set a 'primary target'. Standard Gradle tasks that are not bound to a specific target – like 'assemble' – use
      * this 'primary target'.
      */
@@ -132,6 +149,7 @@ abstract public class JavaModulePackagingExtension {
     /**
      * Set a test suite to be 'multi-target'. This registers an additional 'test' task for each target.
      */
+    @SuppressWarnings({"unused", "UnstableApiUsage"})
     public TestSuite multiTargetTestSuite(TestSuite testSuite) {
         if (!(testSuite instanceof JvmTestSuite)) {
             return testSuite;
@@ -220,7 +238,7 @@ abstract public class JavaModulePackagingExtension {
         JavaPluginExtension java = getProject().getExtensions().getByType(JavaPluginExtension.class);
         JavaApplication application = getProject().getExtensions().getByType(JavaApplication.class);
 
-        TaskProvider<Jpackage> jpackage = tasks.register("jpackage" + capitalize(target.getName()), Jpackage.class, t -> {
+        TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
             t.getJavaInstallation().convention(getJavaToolchains().compilerFor(java.getToolchain()).get().getMetadata());
             t.getOperatingSystem().convention(target.getOperatingSystem());
             t.getArchitecture().convention(target.getArchitecture());
@@ -230,14 +248,20 @@ abstract public class JavaModulePackagingExtension {
             t.getModulePath().from(runtimeClasspath);
 
             t.getApplicationName().convention(getApplicationName());
-            t.getJpackageResources().convention(getJpackageResources().dir(target.getOperatingSystem()));
+            t.getJpackageResources().from(getJpackageResources().dir(target.getOperatingSystem()));
             t.getApplicationDescription().convention(getApplicationDescription());
             t.getVendor().convention(getVendor());
             t.getCopyright().convention(getCopyright());
             t.getJavaOptions().convention(application.getApplicationDefaultJvmArgs());
+            t.getJlinkOptions().convention(getJlinkOptions());
+            t.getAddModules().convention(getAddModules());
             t.getOptions().convention(target.getOptions());
+            t.getAppImageOptions().convention(target.getAppImageOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
+            t.getSingleStepPackaging().convention(target.getSingleStepPackaging());
             t.getResources().from(getResources());
+            t.getTargetResources().from(target.getTargetResources());
+            t.getVerbose().convention(getVerbose());
 
             t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
             t.getTempDirectory().convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
@@ -252,15 +276,25 @@ abstract public class JavaModulePackagingExtension {
             t.setJvmArgs(application.getApplicationDefaultJvmArgs());
             t.classpath(tasks.named("jar"), runtimeClasspath);
         });
+        maybeAddJpackageLifecycleTask(tasks, target, jpackage);
+    }
 
-        String targetAssembleLifecycle = "assemble" + capitalize(target.getName());
-        if (!tasks.getNames().contains(targetAssembleLifecycle)) {
-            TaskProvider<Task> lifecycleTask = tasks.register(targetAssembleLifecycle, t -> {
+    private void maybeAddJpackageLifecycleTask(TaskContainer tasks, Target target, TaskProvider<Jpackage> targetJpackage) {
+        // if a task already exists, do nothing to avoid conflciting with other plugins
+        TaskProvider<Task> jpackage;
+        if (tasks.getNames().contains(JPACKAGE)) {
+            jpackage = tasks.named(JPACKAGE);
+        } else {
+            jpackage = tasks.register(JPACKAGE, t -> {
                 t.setGroup(BUILD_GROUP);
-                t.setDescription("Builds this project for " + target.getName());
+                t.setDescription("Build the package for the current host system");
             });
         }
-        tasks.named(targetAssembleLifecycle, t -> t.dependsOn(jpackage));
+        jpackage.configure(t -> {
+            if (HostIdentification.isHostTarget(target)) {
+                t.dependsOn(targetJpackage);
+            }
+        });
     }
 
     private Configuration maybeCreateInternalConfiguration() {

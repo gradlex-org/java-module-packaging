@@ -53,11 +53,6 @@ public class GradleBuild {
         this.libBuildFile = file("lib/build.gradle.kts");
         this.libModuleInfoFile = file("lib/src/main/java/module-info.java");
 
-        // TODO remove, should work with empty dir
-        projectDir.dir("app/src/main/resourcesPackage/windows");
-        projectDir.dir("app/src/main/resourcesPackage/macos");
-        projectDir.dir("app/src/main/resourcesPackage/linux");
-
         settingsFile.writeText("""
             dependencyResolutionManagement { repositories.mavenCentral() }
             includeBuild(".")
@@ -113,19 +108,22 @@ public class GradleBuild {
         return new WritableFile(projectDir, path);
     }
 
+    public Directory appImageFolder() {
+        if (runsOnMacos()) return projectDir.dir("app/build/packages/macos");
+        if (runsOnLinux()) return projectDir.dir("app/build/packages/ubuntu");
+        if (runsOnWindows()) return projectDir.dir("app/build/packages/windows");
+        throw new IllegalStateException("unknown os");
+    }
+
+    public Directory appContentsFolder() {
+        if (runsOnMacos()) return projectDir.dir("app/build/packages/macos/app.app/Contents");
+        if (runsOnLinux()) return projectDir.dir("app/build/packages/ubuntu/app/lib");
+        if (runsOnWindows()) return projectDir.dir("app/build/packages/windows/app");
+        throw new IllegalStateException("unknown os");
+    }
+
     public BuildResult build(String task) {
         return runner(task).build();
-    }
-
-    public BuildResult run() {
-        return runner("run").build();
-    }
-
-    public BuildResult printRuntimeJars() {
-        return runner(":app:printRuntimeJars", "-q").build();
-    }
-    public BuildResult printCompileJars() {
-        return runner(":app:printCompileJars", "-q").build();
     }
 
     public BuildResult fail(String task) {
@@ -167,6 +165,13 @@ public class GradleBuild {
         }
     }
 
+    public static String currentTarget() {
+        if (runsOnMacos()) return "macos";
+        if (runsOnLinux()) return "ubuntu";
+        if (runsOnWindows()) return "windows";
+        throw new IllegalStateException("unknown os");
+    }
+
     public static boolean runsOnWindows() {
         return hostOs().contains("win");
     }
@@ -180,7 +185,9 @@ public class GradleBuild {
     }
 
     public static String hostOs() {
-        return System.getProperty("os.name").replace(" ", "").toLowerCase();
+        String hostOs = System.getProperty("os.name").toLowerCase().replace(" ", "");
+        if (hostOs.startsWith("mac")) return "macos";
+        if (hostOs.startsWith("win")) return "windows";
+        return "linux";
     }
-
 }

@@ -16,6 +16,7 @@
 
 package org.gradlex.javamodule.packaging.model;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
@@ -30,10 +31,16 @@ abstract public class Target {
 
     abstract public ListProperty<String> getPackageTypes();
     abstract public ListProperty<String> getOptions();
+    abstract public ListProperty<String> getAppImageOptions();
+
+    abstract public ConfigurableFileCollection getTargetResources();
+
+    abstract public Property<Boolean> getSingleStepPackaging();
 
     @Inject
     public Target(String name) {
         this.name = name;
+        getSingleStepPackaging().convention(false);
     }
 
     public String getName() {

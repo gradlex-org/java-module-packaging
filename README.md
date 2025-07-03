@@ -105,6 +105,10 @@ Or, for convenience, let the plugin pick the target fitting the machine you run 
 
 There are some additional configuration options that can be used if needed.
 All options have a default. Only configure what you need in addition.
+For more information about the available options, consult the
+[jpackage](https://docs.oracle.com/en/java/javase/24/docs/specs/man/jpackage.html) and
+[jlink](https://docs.oracle.com/en/java/javase/24/docs/specs/man/jlink.html)
+(for `jlinkOptions`) documentation.
 
 ```kotlin
 javaModulePackaging {
@@ -218,6 +222,46 @@ To avoid re-compilation of the Java code on each of the runners, you can run a
 
 The [java-module-system](https://github.com/jjohannes/java-module-system) project is an example that
 uses GitHub actions with a Gradle remote build cache.
+
+## FAQ
+
+### How does the plugin interact with the `jpackage` command?
+
+By default, dhe plugin calls `jpackage` in two steps:
+
+1. Build `--type app-image` as a package-type independent image folder. This is where `jlink` is involved.
+2. Build OS-specific packages via `--type <package-type>`.
+   This may be called several times for the same target (e.g. `exe` and `msi` on Windows).
+
+OS-independent options can be configured through the extension:
+
+```kotlin
+javaModulePackaging {
+  applicationName = "app" // defaults to project name
+  applicationVersion = "1.0" // defaults to project version
+  applicationDescription = "Awesome App"
+  vendor = "My Company" 
+  copyright = "(c) My Company" 
+  jlinkOptions.addAll("--no-header-files", "--no-man-pages", "--bind-services")
+  addModules.addAll("additional.module.to.include")
+  verbose = false
+}
+```
+
+OS-specific options can be defined inside a target:
+
+```kotlin
+javaModulePackaging {
+  target("windows-2022") { // address target by name
+    options.addAll("--win-dir-chooser", "--win-shortcut", "--win-menu")
+  }
+  targetsWithOs("windows") { // all targets of for a certain os
+    // ...
+  }
+}
+```
+
+You can tell the plugin to perform packaging in one step by setting the `singleStepPackaging = true` option on a target.
 
 # Disclaimer
 

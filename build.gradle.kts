@@ -39,7 +39,7 @@ testing.suites.named<JvmTestSuite>("test") {
         }
     }
     dependencies {
-        implementation("org.assertj:assertj-core:3.27.4")
+        implementation("org.assertj:assertj-core:3.27.6")
     }
     targets.configureEach {
         testTask {

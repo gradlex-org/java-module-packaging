@@ -1,21 +1,16 @@
-/*
- * Copyright the GradleX team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging;
 
+import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_GROUP;
+import static org.gradle.nativeplatform.MachineArchitecture.ARCHITECTURE_ATTRIBUTE;
+import static org.gradle.nativeplatform.OperatingSystemFamily.LINUX;
+import static org.gradle.nativeplatform.OperatingSystemFamily.MACOS;
+import static org.gradle.nativeplatform.OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE;
+import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
+
+import java.util.Arrays;
+import java.util.Collections;
+import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectSet;
@@ -53,45 +48,43 @@ import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
 import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
 
-import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_GROUP;
-import static org.gradle.nativeplatform.MachineArchitecture.ARCHITECTURE_ATTRIBUTE;
-import static org.gradle.nativeplatform.OperatingSystemFamily.LINUX;
-import static org.gradle.nativeplatform.OperatingSystemFamily.MACOS;
-import static org.gradle.nativeplatform.OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE;
-import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
-
-abstract public class JavaModulePackagingExtension {
-    private static final boolean MIN_GRADLE_9_0 = GradleVersion.current().compareTo(GradleVersion.version("9.0.0")) >= 0;
+public abstract class JavaModulePackagingExtension {
+    private static final boolean MIN_GRADLE_9_0 =
+            GradleVersion.current().compareTo(GradleVersion.version("9.0.0")) >= 0;
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";
     private static final String JPACKAGE = "jpackage";
 
-    abstract public Property<String> getApplicationName();
-    abstract public Property<String> getApplicationVersion();
-    abstract public Property<String> getApplicationDescription();
-    abstract public Property<String> getVendor();
-    abstract public Property<String> getCopyright();
-    abstract public ListProperty<String> getJlinkOptions();
-    abstract public ListProperty<String> getAddModules();
-    abstract public DirectoryProperty getJpackageResources();
-    abstract public ConfigurableFileCollection getResources();
-    abstract public Property<Boolean> getVerbose();
+    public abstract Property<String> getApplicationName();
+
+    public abstract Property<String> getApplicationVersion();
+
+    public abstract Property<String> getApplicationDescription();
+
+    public abstract Property<String> getVendor();
+
+    public abstract Property<String> getCopyright();
+
+    public abstract ListProperty<String> getJlinkOptions();
+
+    public abstract ListProperty<String> getAddModules();
+
+    public abstract DirectoryProperty getJpackageResources();
+
+    public abstract ConfigurableFileCollection getResources();
+
+    public abstract Property<Boolean> getVerbose();
 
     private final NamedDomainObjectContainer<Target> targets = getObjects().domainObjectContainer(Target.class);
 
     @Inject
-    abstract protected JavaToolchainService getJavaToolchains();
+    protected abstract JavaToolchainService getJavaToolchains();
 
     @Inject
-    abstract protected ObjectFactory getObjects();
+    protected abstract ObjectFactory getObjects();
 
     @Inject
-    abstract protected Project getProject();
-
+    protected abstract Project getProject();
 
     /**
      * Retrieve the target with the given 'label'. If the target does not yet exist, it will be created.
@@ -123,8 +116,9 @@ abstract public class JavaModulePackagingExtension {
      */
     @SuppressWarnings("unused")
     public void targetsWithOs(String operatingSystem, Action<? super Target> action) {
-        NamedDomainObjectSet<Target> matches = targets.matching(t ->
-                t.getOperatingSystem().isPresent() && t.getOperatingSystem().get().equals(operatingSystem));
+        NamedDomainObjectSet<Target> matches =
+                targets.matching(t -> t.getOperatingSystem().isPresent()
+                        && t.getOperatingSystem().get().equals(operatingSystem));
         matches.all(action);
     }
 
@@ -139,10 +133,14 @@ abstract public class JavaModulePackagingExtension {
 
         sourceSets.all(sourceSet -> {
             // Use this target for target-independent classpaths to make some decision
-            configureTargetAttributes(configurations.getByName(sourceSet.getCompileClasspathConfigurationName()), target);
-            configureTargetAttributes(configurations.getByName(sourceSet.getRuntimeClasspathConfigurationName()), target);
+            configureTargetAttributes(
+                    configurations.getByName(sourceSet.getCompileClasspathConfigurationName()), target);
+            configureTargetAttributes(
+                    configurations.getByName(sourceSet.getRuntimeClasspathConfigurationName()), target);
             // Integration for consistent resolution by 'java-module-dependencies' plugin
-            configurations.matching(conf -> "mainRuntimeClasspath".equals(conf.getName())).all(conf -> configureTargetAttributes(conf, target));
+            configurations
+                    .matching(conf -> "mainRuntimeClasspath".equals(conf.getName()))
+                    .all(conf -> configureTargetAttributes(conf, target));
         });
 
         return target;
@@ -158,16 +156,24 @@ abstract public class JavaModulePackagingExtension {
         }
 
         JvmTestSuite suite = (JvmTestSuite) testSuite;
-        targets.all(target -> suite.getTargets().register(testSuite.getName() + capitalize(target.getName()), testTarget -> testTarget.getTestTask().configure(task -> {
-            task.getInputs().property("operatingSystem", target.getOperatingSystem());
-            task.getInputs().property("architecture", target.getArchitecture());
+        targets.all(target -> suite.getTargets()
+                .register(
+                        testSuite.getName() + capitalize(target.getName()),
+                        testTarget -> testTarget.getTestTask().configure(task -> {
+                            task.getInputs().property("operatingSystem", target.getOperatingSystem());
+                            task.getInputs().property("architecture", target.getArchitecture());
 
-            ConfigurationContainer configurations = getProject().getConfigurations();
-            task.setClasspath(configurations.getByName(target.getName() + capitalize(suite.getSources().getRuntimeClasspathConfigurationName())).plus(
-                    getObjects().fileCollection().from(getProject().getTasks().named(suite.getSources().getJarTaskName())))
-            );
-            task.doFirst(new ValidateHostSystemAction());
-        })));
+                            ConfigurationContainer configurations = getProject().getConfigurations();
+                            task.setClasspath(configurations
+                                    .getByName(target.getName()
+                                            + capitalize(suite.getSources().getRuntimeClasspathConfigurationName()))
+                                    .plus(getObjects()
+                                            .fileCollection()
+                                            .from(getProject()
+                                                    .getTasks()
+                                                    .named(suite.getSources().getJarTaskName()))));
+                            task.doFirst(new ValidateHostSystemAction());
+                        })));
 
         return testSuite;
     }
@@ -190,48 +196,72 @@ abstract public class JavaModulePackagingExtension {
 
         sourceSets.all(sourceSet -> {
             Configuration internal = maybeCreateInternalConfiguration();
-            configurations.create(target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
-                c.setCanBeConsumed(false);
-                setInvisible(c);
-                configureJavaStandardAttributes(c, Usage.JAVA_API);
-                configureTargetAttributes(c, target);
-                c.extendsFrom(
-                        configurations.getByName(sourceSet.getImplementationConfigurationName()),
-                        configurations.getByName(sourceSet.getCompileOnlyConfigurationName()),
-                        internal
-                );
-            });
-            Configuration runtimeClasspath = configurations.create(target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
-                c.setCanBeConsumed(false);
-                setInvisible(c);
-                configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
-                configureTargetAttributes(c, target);
-                c.extendsFrom(
-                        configurations.getByName(sourceSet.getImplementationConfigurationName()),
-                        configurations.getByName(sourceSet.getRuntimeOnlyConfigurationName()),
-                        internal
-                );
-            });
+            configurations.create(
+                    target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
+                        c.setCanBeConsumed(false);
+                        setInvisible(c);
+                        configureJavaStandardAttributes(c, Usage.JAVA_API);
+                        configureTargetAttributes(c, target);
+                        c.extendsFrom(
+                                configurations.getByName(sourceSet.getImplementationConfigurationName()),
+                                configurations.getByName(sourceSet.getCompileOnlyConfigurationName()),
+                                internal);
+                    });
+            Configuration runtimeClasspath = configurations.create(
+                    target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
+                        c.setCanBeConsumed(false);
+                        setInvisible(c);
+                        configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
+                        configureTargetAttributes(c, target);
+                        c.extendsFrom(
+                                configurations.getByName(sourceSet.getImplementationConfigurationName()),
+                                configurations.getByName(sourceSet.getRuntimeOnlyConfigurationName()),
+                                internal);
+                    });
 
             if (SourceSet.isMain(sourceSet)) {
-                getProject().getPlugins().withType(ApplicationPlugin.class, p -> registerTargetSpecificTasks(target, sourceSet.getJarTaskName(), runtimeClasspath));
+                getProject()
+                        .getPlugins()
+                        .withType(
+                                ApplicationPlugin.class,
+                                p -> registerTargetSpecificTasks(target, sourceSet.getJarTaskName(), runtimeClasspath));
             }
         });
     }
 
     private void configureJavaStandardAttributes(Configuration resolvable, String usage) {
         resolvable.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, getObjects().named(Usage.class, usage));
-        resolvable.getAttributes().attribute(Category.CATEGORY_ATTRIBUTE, getObjects().named(Category.class, Category.LIBRARY));
-        resolvable.getAttributes().attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, getObjects().named(LibraryElements.class, LibraryElements.JAR));
-        resolvable.getAttributes().attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM));
-        resolvable.getAttributes().attribute(Bundling.BUNDLING_ATTRIBUTE, getObjects().named(Bundling.class, Bundling.EXTERNAL));
+        resolvable
+                .getAttributes()
+                .attribute(Category.CATEGORY_ATTRIBUTE, getObjects().named(Category.class, Category.LIBRARY));
+        resolvable
+                .getAttributes()
+                .attribute(
+                        LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                        getObjects().named(LibraryElements.class, LibraryElements.JAR));
+        resolvable
+                .getAttributes()
+                .attribute(
+                        TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+                        getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM));
+        resolvable
+                .getAttributes()
+                .attribute(Bundling.BUNDLING_ATTRIBUTE, getObjects().named(Bundling.class, Bundling.EXTERNAL));
         // For integration with 'extra-java-module-info' plugin
         resolvable.getAttributes().attribute(JAVA_MODULE_ATTRIBUTE, true);
     }
 
     private void configureTargetAttributes(Configuration resolvable, Target target) {
-        resolvable.getAttributes().attributeProvider(OPERATING_SYSTEM_ATTRIBUTE, target.getOperatingSystem().map(name -> getObjects().named(OperatingSystemFamily.class, name)));
-        resolvable.getAttributes().attributeProvider(ARCHITECTURE_ATTRIBUTE, target.getArchitecture().map(name -> getObjects().named(MachineArchitecture.class, name)));
+        resolvable
+                .getAttributes()
+                .attributeProvider(
+                        OPERATING_SYSTEM_ATTRIBUTE,
+                        target.getOperatingSystem().map(name -> getObjects().named(OperatingSystemFamily.class, name)));
+        resolvable
+                .getAttributes()
+                .attributeProvider(
+                        ARCHITECTURE_ATTRIBUTE,
+                        target.getArchitecture().map(name -> getObjects().named(MachineArchitecture.class, name)));
     }
 
     private void registerTargetSpecificTasks(Target target, String applicationJarTask, Configuration runtimeClasspath) {
@@ -241,7 +271,11 @@ abstract public class JavaModulePackagingExtension {
         JavaApplication application = getProject().getExtensions().getByType(JavaApplication.class);
 
         TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
-            t.getJavaInstallation().convention(getJavaToolchains().compilerFor(java.getToolchain()).get().getMetadata());
+            t.getJavaInstallation()
+                    .convention(getJavaToolchains()
+                            .compilerFor(java.getToolchain())
+                            .get()
+                            .getMetadata());
             t.getOperatingSystem().convention(target.getOperatingSystem());
             t.getArchitecture().convention(target.getArchitecture());
             t.getMainModule().convention(application.getMainModule());
@@ -265,8 +299,10 @@ abstract public class JavaModulePackagingExtension {
             t.getTargetResources().from(target.getTargetResources());
             t.getVerbose().convention(getVerbose());
 
-            t.getDestination().convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
-            t.getTempDirectory().convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
+            t.getDestination()
+                    .convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
+            t.getTempDirectory()
+                    .convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
         });
 
         tasks.register("run" + capitalize(target.getName()), JavaExec.class, t -> {
@@ -281,7 +317,8 @@ abstract public class JavaModulePackagingExtension {
         maybeAddJpackageLifecycleTask(tasks, target, jpackage);
     }
 
-    private void maybeAddJpackageLifecycleTask(TaskContainer tasks, Target target, TaskProvider<Jpackage> targetJpackage) {
+    private void maybeAddJpackageLifecycleTask(
+            TaskContainer tasks, Target target, TaskProvider<Jpackage> targetJpackage) {
         // if a task already exists, do nothing to avoid conflciting with other plugins
         TaskProvider<Task> jpackage;
         if (tasks.getNames().contains(JPACKAGE)) {

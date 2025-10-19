@@ -1,23 +1,7 @@
-/*
- * Copyright the GradleX team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging.test.fixture;
 
-import org.gradle.testkit.runner.BuildResult;
-import org.gradle.testkit.runner.GradleRunner;
+import static java.util.function.Function.identity;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -27,8 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.function.Function.identity;
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
 
 public class GradleBuild {
 
@@ -53,13 +37,15 @@ public class GradleBuild {
         this.libBuildFile = file("lib/build.gradle.kts");
         this.libModuleInfoFile = file("lib/src/main/java/module-info.java");
 
-        settingsFile.writeText("""
+        settingsFile.writeText(
+                """
             dependencyResolutionManagement { repositories.mavenCentral() }
             includeBuild(".")
             rootProject.name = "test-project"
             include("app", "lib")
         """);
-        appBuildFile.writeText("""
+        appBuildFile.writeText(
+                """
             plugins {
                 id("org.gradlex.java-module-packaging")
                 id("application")
@@ -73,20 +59,24 @@ public class GradleBuild {
                 mainClass.set("org.example.app.Main")
             }
         """);
-        file("app/src/main/java/org/example/app/Main.java").writeText("""
+        file("app/src/main/java/org/example/app/Main.java")
+                .writeText(
+                        """
             package org.example.app;
-            
+
             public class Main {
                 public static void main(String... args) {
                 }
             }
             """);
-        file("app/src/test/java/org/example/app/test/MainTest.java").writeText("""
+        file("app/src/test/java/org/example/app/test/MainTest.java")
+                .writeText(
+                        """
             package org.example.app.test;
-            
+
             import org.junit.jupiter.api.Test;
             import org.example.app.Main;
-            
+
             public class MainTest {
                 @Test
                 void testApp() {
@@ -95,7 +85,8 @@ public class GradleBuild {
             }
             """);
 
-        libBuildFile.writeText("""
+        libBuildFile.writeText(
+                """
             plugins {
                 id("org.gradlex.java-module-packaging")
                 id("java-library")
@@ -135,22 +126,22 @@ public class GradleBuild {
     }
 
     public GradleRunner runner(boolean projectIsolation, String... args) {
-        boolean debugMode = ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("-agentlib:jdwp");
-        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation ? List.of() : List.of(
-                "--configuration-cache",
-                "-Dorg.gradle.unsafe.isolated-projects=true"
-        );
-        Stream<String> standardArgs = Stream.of(
-                "-s",
-                "--warning-mode=all"
-        );
+        boolean debugMode = ManagementFactory.getRuntimeMXBean()
+                .getInputArguments()
+                .toString()
+                .contains("-agentlib:jdwp");
+        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation
+                ? List.of()
+                : List.of("--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
+        Stream<String> standardArgs = Stream.of("-s", "--warning-mode=all");
         GradleRunner runner = GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
                 .withDebug(debugMode)
                 .withProjectDir(projectDir.getAsPath().toFile())
                 .withArguments(Stream.of(Arrays.stream(args), latestFeaturesArgs.stream(), standardArgs)
-                        .flatMap(identity()).collect(Collectors.toList()));
+                        .flatMap(identity())
+                        .collect(Collectors.toList()));
         if (GRADLE_VERSION_UNDER_TEST != null) {
             runner.withGradleVersion(GRADLE_VERSION_UNDER_TEST);
         }

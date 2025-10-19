@@ -1,26 +1,11 @@
-/*
- * Copyright the GradleX team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging.test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for setting various options for jpackage or the underlying jlink.
@@ -33,7 +18,8 @@ class JavaModulePackagingOptionsTest {
     @BeforeEach
     void setup() {
         var macosArch = System.getProperty("os.arch").contains("aarch") ? "aarch64" : "x86-64";
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             version = "1.0"
             javaModulePackaging {
                 target("macos") {
@@ -52,17 +38,18 @@ class JavaModulePackagingOptionsTest {
                     packageTypes.set(listOf("exe"))
                 }
             }
-        """.formatted(macosArch));
-        build.appModuleInfoFile.writeText("""              
+        """
+                        .formatted(macosArch));
+        build.appModuleInfoFile.writeText("""
             module org.example.app {
             }
         """);
-
     }
 
     @Test
     void can_configure_jlink_options() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 jlinkOptions.addAll(
                     "--ignore-signing-information",
@@ -83,7 +70,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_configure_java_options() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             application {
                 applicationDefaultJvmArgs = listOf(
                     "-XX:+UnlockExperimentalVMOptions",
@@ -96,10 +84,12 @@ class JavaModulePackagingOptionsTest {
 
         build.build(":app:jpackage");
 
-        assertThat(build.appContentsFolder().file("app/app.cfg").getAsPath()).hasContent("""
+        assertThat(build.appContentsFolder().file("app/app.cfg").getAsPath())
+                .hasContent(
+                        """
             [Application]
             app.mainmodule=org.example.app/org.example.app.Main
-            
+
             [JavaOptions]
             java-options=-Djpackage.app-version=1.0
             java-options=-XX:+UnlockExperimentalVMOptions
@@ -111,7 +101,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_configure_add_modules() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 addModules.addAll("com.acme.boo")
             }
@@ -125,7 +116,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_set_verbose_option() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 verbose.set(true)
             }
@@ -138,7 +130,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_set_target_specific_option() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 targetsWithOs("windows") {
                     singleStepPackaging.set(true)
@@ -165,7 +158,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_set_target_specific_option_for_app_image() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 targetsWithOs("windows") {
                     options.addAll("--dummy") // no effect as app-image fails first
@@ -189,7 +183,8 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_build_package_in_one_step() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 targetsWithOs("windows") { singleStepPackaging.set(true) }
                 targetsWithOs("linux") { singleStepPackaging.set(true) }
@@ -199,8 +194,10 @@ class JavaModulePackagingOptionsTest {
 
         build.build(":app:jpackage");
 
-        assertThat(build.appImageFolder().getAsPath()).isDirectoryContaining(f ->
-                f.getFileName().toString().contains("app") && f.getFileName().toString().contains("1.0"));
-        assertThat(build.appImageFolder().getAsPath()).isDirectoryNotContaining(f -> f.toFile().isDirectory());
+        assertThat(build.appImageFolder().getAsPath())
+                .isDirectoryContaining(f -> f.getFileName().toString().contains("app")
+                        && f.getFileName().toString().contains("1.0"));
+        assertThat(build.appImageFolder().getAsPath())
+                .isDirectoryNotContaining(f -> f.toFile().isDirectory());
     }
 }

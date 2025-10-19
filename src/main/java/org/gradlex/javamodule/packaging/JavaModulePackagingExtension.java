@@ -47,6 +47,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.nativeplatform.MachineArchitecture;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.gradle.testing.base.TestSuite;
+import org.gradle.util.GradleVersion;
 import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
@@ -64,6 +65,7 @@ import static org.gradle.nativeplatform.OperatingSystemFamily.OPERATING_SYSTEM_A
 import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
 
 abstract public class JavaModulePackagingExtension {
+    private static final boolean MIN_GRADLE_9_0 = GradleVersion.current().compareTo(GradleVersion.version("9.0.0")) >= 0;
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";
     private static final String JPACKAGE = "jpackage";
@@ -190,7 +192,7 @@ abstract public class JavaModulePackagingExtension {
             Configuration internal = maybeCreateInternalConfiguration();
             configurations.create(target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
                 c.setCanBeConsumed(false);
-                c.setVisible(false);
+                setInvisible(c);
                 configureJavaStandardAttributes(c, Usage.JAVA_API);
                 configureTargetAttributes(c, target);
                 c.extendsFrom(
@@ -201,7 +203,7 @@ abstract public class JavaModulePackagingExtension {
             });
             Configuration runtimeClasspath = configurations.create(target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
                 c.setCanBeConsumed(false);
-                c.setVisible(false);
+                setInvisible(c);
                 configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
                 configureTargetAttributes(c, target);
                 c.extendsFrom(
@@ -310,5 +312,12 @@ abstract public class JavaModulePackagingExtension {
 
     private String capitalize(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setInvisible(Configuration c) {
+        if (!MIN_GRADLE_9_0) {
+            c.setVisible(false);
+        }
     }
 }

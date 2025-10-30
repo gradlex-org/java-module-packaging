@@ -13,6 +13,10 @@ jobs:
         os: [ubuntu, macos, windows]
     runs-on: ${{ matrix.os }}-latest
     steps:
+      - name: standardize git line endings
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
       - name: git clone
         uses: actions/checkout@v5
       - name: Set up JDK

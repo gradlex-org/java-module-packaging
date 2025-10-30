@@ -1,21 +1,19 @@
-/*
- * Copyright the GradleX team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging.tasks;
 
+import static java.util.Objects.requireNonNull;
+import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
+import static org.gradlex.javamodule.packaging.internal.HostIdentification.validateHostSystem;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
@@ -38,107 +36,93 @@ import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecSpec;
 
-import javax.inject.Inject;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
-import static org.gradle.nativeplatform.OperatingSystemFamily.WINDOWS;
-import static org.gradlex.javamodule.packaging.internal.HostIdentification.validateHostSystem;
-
 @CacheableTask
-abstract public class Jpackage extends DefaultTask {
+public abstract class Jpackage extends DefaultTask {
 
     @Nested
-    abstract public Property<JavaInstallationMetadata> getJavaInstallation();
+    public abstract Property<JavaInstallationMetadata> getJavaInstallation();
 
     @Input
-    abstract public Property<String> getOperatingSystem();
+    public abstract Property<String> getOperatingSystem();
 
     @Input
-    abstract public Property<String> getArchitecture();
+    public abstract Property<String> getArchitecture();
 
     @Input
-    abstract public Property<String> getMainModule();
+    public abstract Property<String> getMainModule();
 
     @Input
-    abstract public Property<String> getVersion();
+    public abstract Property<String> getVersion();
 
     @Classpath
-    abstract public ConfigurableFileCollection getModulePath();
+    public abstract ConfigurableFileCollection getModulePath();
 
     @Input
-    abstract public Property<String> getApplicationName();
-
-    @Input
-    @Optional
-    abstract public Property<String> getApplicationDescription();
-
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public ConfigurableFileCollection getJpackageResources();
-
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public ConfigurableFileCollection getResources();
-
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    abstract public ConfigurableFileCollection getTargetResources();
+    public abstract Property<String> getApplicationName();
 
     @Input
     @Optional
-    abstract public Property<String> getVendor();
+    public abstract Property<String> getApplicationDescription();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract ConfigurableFileCollection getJpackageResources();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract ConfigurableFileCollection getResources();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract ConfigurableFileCollection getTargetResources();
 
     @Input
     @Optional
-    abstract public Property<String> getCopyright();
+    public abstract Property<String> getVendor();
 
     @Input
-    abstract public ListProperty<String> getJavaOptions();
+    @Optional
+    public abstract Property<String> getCopyright();
 
     @Input
-    abstract public ListProperty<String> getJlinkOptions();
+    public abstract ListProperty<String> getJavaOptions();
 
     @Input
-    abstract public ListProperty<String> getAddModules();
+    public abstract ListProperty<String> getJlinkOptions();
 
     @Input
-    abstract public ListProperty<String> getOptions();
+    public abstract ListProperty<String> getAddModules();
 
     @Input
-    abstract public ListProperty<String> getAppImageOptions();
+    public abstract ListProperty<String> getOptions();
 
     @Input
-    abstract public ListProperty<String> getPackageTypes();
+    public abstract ListProperty<String> getAppImageOptions();
 
     @Input
-    abstract public Property<Boolean> getSingleStepPackaging();
+    public abstract ListProperty<String> getPackageTypes();
 
     @Input
-    abstract public Property<Boolean> getVerbose();
+    public abstract Property<Boolean> getSingleStepPackaging();
+
+    @Input
+    public abstract Property<Boolean> getVerbose();
 
     @OutputDirectory
-    abstract public DirectoryProperty getDestination();
+    public abstract DirectoryProperty getDestination();
 
     /**
      * To copy resources before adding them. This allows ressource filtering via Gradle
      * FileCollection and FileTree APIs.
      */
     @Internal
-    abstract public DirectoryProperty getTempDirectory();
+    public abstract DirectoryProperty getTempDirectory();
 
     @Inject
-    abstract protected FileOperations getFiles();
+    protected abstract FileOperations getFiles();
 
     @Inject
-    abstract protected ExecOperations getExec();
+    protected abstract ExecOperations getExec();
 
     @TaskAction
     public void runJpackage() throws Exception {
@@ -161,7 +145,12 @@ abstract public class Jpackage extends DefaultTask {
         });
 
         String executableName = WINDOWS.equals(os) ? "jpackage.exe" : "jpackage";
-        String jpackage = getJavaInstallation().get().getInstallationPath().file("bin/" + executableName).getAsFile().getAbsolutePath();
+        String jpackage = getJavaInstallation()
+                .get()
+                .getInstallationPath()
+                .file("bin/" + executableName)
+                .getAsFile()
+                .getAbsolutePath();
 
         File appContentTmpFolder = getTempDirectory().get().dir("app-content").getAsFile();
 
@@ -186,8 +175,8 @@ abstract public class Jpackage extends DefaultTask {
         }
 
         // package with additional resources
-        getPackageTypes().get().stream().filter(t -> !"app-image".equals(t)).forEach(packageType ->
-                getExec().exec(e -> {
+        getPackageTypes().get().stream().filter(t -> !"app-image".equals(t)).forEach(packageType -> getExec()
+                .exec(e -> {
                     e.commandLine(
                             jpackage,
                             "--type",
@@ -195,8 +184,7 @@ abstract public class Jpackage extends DefaultTask {
                             "--app-version",
                             getVersion().get(),
                             "--dest",
-                            getDestination().get().getAsFile().getPath()
-                    );
+                            getDestination().get().getAsFile().getPath());
                     if (getSingleStepPackaging().get()) {
                         configureJPackageArguments(e, resourcesDir);
                         if (appContentTmpFolder.exists()) {
@@ -210,15 +198,16 @@ abstract public class Jpackage extends DefaultTask {
                     for (String option : getOptions().get()) {
                         e.args(option);
                     }
-                })
-        );
+                }));
 
         generateChecksums();
     }
 
     private File appImageFolder() {
         return Arrays.stream(requireNonNull(getDestination().get().getAsFile().listFiles()))
-                .filter(File::isDirectory).findFirst().get();
+                .filter(File::isDirectory)
+                .findFirst()
+                .get();
     }
 
     private void copyAdditionalRessourcesToImageFolder(File appRootFolder) {
@@ -237,8 +226,7 @@ abstract public class Jpackage extends DefaultTask {
                     "--type",
                     "app-image",
                     "--dest",
-                    getDestination().get().getAsFile().getPath()
-            );
+                    getDestination().get().getAsFile().getPath());
             configureJPackageArguments(e, resourcesDir);
             for (String option : getAppImageOptions().get()) {
                 e.args(option);
@@ -257,8 +245,7 @@ abstract public class Jpackage extends DefaultTask {
                 "--module-path",
                 getModulePath().getAsPath(),
                 "--name",
-                getApplicationName().get()
-        );
+                getApplicationName().get());
         if (getApplicationDescription().isPresent()) {
             e.args("--description", getApplicationDescription().get());
         }
@@ -284,11 +271,15 @@ abstract public class Jpackage extends DefaultTask {
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {
         File destination = getDestination().get().getAsFile();
-        List<File> allFiles = Arrays.stream(requireNonNull(destination.listFiles())).filter(File::isFile).collect(Collectors.toList());
+        List<File> allFiles = Arrays.stream(requireNonNull(destination.listFiles()))
+                .filter(File::isFile)
+                .collect(Collectors.toList());
         for (File result : allFiles) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] encoded = digest.digest(Files.readAllBytes(result.toPath()));
-            Files.write(new File(destination, result.getName() + ".sha256").toPath(), bytesToHex(encoded).getBytes());
+            Files.write(
+                    new File(destination, result.getName() + ".sha256").toPath(),
+                    bytesToHex(encoded).getBytes());
         }
     }
 

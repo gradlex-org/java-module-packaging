@@ -1,30 +1,15 @@
-/*
- * Copyright the GradleX team.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging.test;
-
-import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.currentTarget;
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnLinux;
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnMacos;
 import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnWindows;
+
+import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for adding custom resources to the image/package.
@@ -37,7 +22,8 @@ class JavaModulePackagingResourcesTest {
     @BeforeEach
     void setup() {
         var macosArch = System.getProperty("os.arch").contains("aarch") ? "aarch64" : "x86-64";
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             version = "1.0"
             javaModulePackaging {
                 target("macos") {
@@ -53,17 +39,18 @@ class JavaModulePackagingResourcesTest {
                     architecture.set("x86-64")
                 }
             }
-        """.formatted(macosArch));
-        build.appModuleInfoFile.writeText("""              
+        """
+                        .formatted(macosArch));
+        build.appModuleInfoFile.writeText("""
             module org.example.app {
             }
         """);
-
     }
 
     @Test
     void can_configure_jlink_options() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 jlinkOptions.addAll(
                     "--ignore-signing-information",
@@ -78,13 +65,13 @@ class JavaModulePackagingResourcesTest {
 
         // The error shows that all options before '--unsupported-option' are passed through to jlink
         var result = build.fail(":app:jpackage");
-        assertThat(result.getOutput()).contains(
-                "jlink failed with: Error: unknown option: --unsupported-option");
+        assertThat(result.getOutput()).contains("jlink failed with: Error: unknown option: --unsupported-option");
     }
 
     @Test
     void can_configure_add_modules() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 addModules.addAll("com.acme.boo")
             }
@@ -92,8 +79,7 @@ class JavaModulePackagingResourcesTest {
 
         // The error shows that the option is passed on to jlink
         var result = build.fail(":app:jpackage");
-        assertThat(result.getOutput()).contains(
-                "jlink failed with: Error: Module com.acme.boo not found");
+        assertThat(result.getOutput()).contains("jlink failed with: Error: Module com.acme.boo not found");
     }
 
     @Test
@@ -118,19 +104,23 @@ class JavaModulePackagingResourcesTest {
 
         // Intermediate location to collect files
         assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/dummy.txt".formatted(currentTarget()))
-                .getAsPath()).exists();
+                        .getAsPath())
+                .exists();
         assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/%s".formatted(currentTarget(), icon))
-                .getAsPath()).exists();
+                        .getAsPath())
+                .exists();
 
         // icons end up in Resources
         String resourcesFolder = "";
         if (runsOnMacos()) resourcesFolder = "Resources/";
-        assertThat(build.appContentsFolder().file(resourcesFolder + icon).getAsPath()).hasSize(0);
+        assertThat(build.appContentsFolder().file(resourcesFolder + icon).getAsPath())
+                .hasSize(0);
     }
 
     @Test
     void can_add_resources_for_app_folder() {
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 // resource is added to the os-specific 'app' folder inside the image
                 resources.from("res")
@@ -150,7 +140,8 @@ class JavaModulePackagingResourcesTest {
         // Resource is added to the root of the image.
         // This is a target-specific setting as it usually needs to be placed in a place that
         // makes sense in the corresponding package structure.
-        build.appBuildFile.appendText("""
+        build.appBuildFile.appendText(
+                """
             javaModulePackaging {
                 targetsWithOs("windows") { targetResources.from("res") }
                 targetsWithOs("linux") { targetResources.from("res") }
@@ -163,6 +154,7 @@ class JavaModulePackagingResourcesTest {
 
         build.build(":app:jpackage");
 
-        assertThat(build.appContentsFolder().file("customFolder/dummy.txt").getAsPath()).exists();
+        assertThat(build.appContentsFolder().file("customFolder/dummy.txt").getAsPath())
+                .exists();
     }
 }

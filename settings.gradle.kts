@@ -1,16 +1,3 @@
-plugins {
-    id("com.gradle.develocity") version "4.2.1"
-}
-
-dependencyResolutionManagement {
-    repositories.mavenCentral()
-}
+plugins { id("org.gradlex.internal-build-conventions") version "0.7" }
 
 rootProject.name = "java-module-packaging"
-
-develocity {
-    buildScan {
-        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
-        termsOfUseAgree = "yes"
-    }
-}

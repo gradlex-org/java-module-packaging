@@ -280,7 +280,7 @@ public abstract class Jpackage extends DefaultTask {
         } catch (IOException e) {
             return "--module-path " + modulePathAsPath;
         }
-        return argsFile.toString();
+        return "@" + argsFile.toString();
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

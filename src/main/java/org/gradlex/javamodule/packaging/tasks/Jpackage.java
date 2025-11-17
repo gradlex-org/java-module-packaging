@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -272,8 +273,10 @@ public abstract class Jpackage extends DefaultTask {
 
     private String createArgsFile(String modulePathAsPath) {
         Path argsFile = getTemporaryDir().toPath().resolve("args.txt");
+        List<String> lines = new ArrayList<>(1);
+        lines.add("--module-path " + modulePathAsPath);
         try {
-            Files.write(argsFile, List.of("--module-path " + modulePathAsPath));
+            Files.write(argsFile, lines);
         } catch (IOException e) {
             return "--module-path " + modulePathAsPath;
         }

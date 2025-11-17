@@ -8,6 +8,7 @@ import static org.gradlex.javamodule.packaging.internal.HostIdentification.valid
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -235,6 +236,7 @@ public abstract class Jpackage extends DefaultTask {
     }
 
     private void configureJPackageArguments(ExecSpec e, Directory resourcesDir) {
+        String argsFile = createArgsFile(getModulePath().getAsPath());
         e.args(
                 "--module",
                 getMainModule().get(),
@@ -242,8 +244,7 @@ public abstract class Jpackage extends DefaultTask {
                 resourcesDir.getAsFile().getPath(),
                 "--app-version",
                 getVersion().get(),
-                "--module-path",
-                getModulePath().getAsPath(),
+                argsFile,
                 "--name",
                 getApplicationName().get());
         if (getApplicationDescription().isPresent()) {
@@ -267,6 +268,16 @@ public abstract class Jpackage extends DefaultTask {
         if (getVerbose().get()) {
             e.args("--verbose");
         }
+    }
+
+    private String createArgsFile(String modulePathAsPath) {
+        Path argsFile = getTemporaryDir().toPath().resolve("args.txt");
+        try {
+            Files.write(argsFile, List.of("--module-path " + modulePathAsPath));
+        } catch (IOException e) {
+            return "--module-path " + modulePathAsPath;
+        }
+        return argsFile.toString();
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

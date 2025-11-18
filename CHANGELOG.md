@@ -1,5 +1,8 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
+## Version 1.2
+* [Fixed] [#69](https://github.com/gradlex-org/java-module-packaging/issues/69) - Use an args file for 'jpackage' to not exceed command line length limits (Thanks [Oliver Kopp](https://github.com/koppor) for contributing!)
+
 ## Version 1.1
 - Configuration option for `--jlink-options` 
 - Configuration option for `--verbose`

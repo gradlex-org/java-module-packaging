@@ -278,7 +278,7 @@ public abstract class Jpackage extends DefaultTask {
         try {
             Files.write(argsFile, lines);
         } catch (IOException e) {
-            return "--module-path " + modulePathAsPath;
+            throw new RuntimeException(e);
         }
         return "@" + argsFile.toString();
     }

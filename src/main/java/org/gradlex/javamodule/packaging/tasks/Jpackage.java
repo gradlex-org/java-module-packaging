@@ -8,8 +8,10 @@ import static org.gradlex.javamodule.packaging.internal.HostIdentification.valid
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -112,7 +114,7 @@ public abstract class Jpackage extends DefaultTask {
     public abstract DirectoryProperty getDestination();
 
     /**
-     * To copy resources before adding them. This allows ressource filtering via Gradle
+     * To copy resources before adding them. This allows resource filtering via Gradle
      * FileCollection and FileTree APIs.
      */
     @Internal
@@ -235,6 +237,7 @@ public abstract class Jpackage extends DefaultTask {
     }
 
     private void configureJPackageArguments(ExecSpec e, Directory resourcesDir) {
+        String argsFile = createArgsFile(getModulePath().getAsPath());
         e.args(
                 "--module",
                 getMainModule().get(),
@@ -242,8 +245,7 @@ public abstract class Jpackage extends DefaultTask {
                 resourcesDir.getAsFile().getPath(),
                 "--app-version",
                 getVersion().get(),
-                "--module-path",
-                getModulePath().getAsPath(),
+                argsFile,
                 "--name",
                 getApplicationName().get());
         if (getApplicationDescription().isPresent()) {
@@ -267,6 +269,18 @@ public abstract class Jpackage extends DefaultTask {
         if (getVerbose().get()) {
             e.args("--verbose");
         }
+    }
+
+    private String createArgsFile(String modulePathAsPath) {
+        Path argsFile = getTemporaryDir().toPath().resolve("args.txt");
+        List<String> lines = new ArrayList<>(1);
+        lines.add("--module-path " + modulePathAsPath);
+        try {
+            Files.write(argsFile, lines);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return "@" + argsFile.toString();
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

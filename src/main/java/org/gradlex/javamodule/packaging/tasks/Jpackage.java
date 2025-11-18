@@ -114,7 +114,7 @@ public abstract class Jpackage extends DefaultTask {
     public abstract DirectoryProperty getDestination();
 
     /**
-     * To copy resources before adding them. This allows ressource filtering via Gradle
+     * To copy resources before adding them. This allows resource filtering via Gradle
      * FileCollection and FileTree APIs.
      */
     @Internal

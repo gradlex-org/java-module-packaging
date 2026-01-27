@@ -6,7 +6,9 @@ import static org.gradlex.javamodule.packaging.internal.HostIdentification.valid
 import java.util.Map;
 import org.gradle.api.Action;
 import org.gradle.api.Task;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class ValidateHostSystemAction implements Action<Task> {
     @Override
     public void execute(Task task) {

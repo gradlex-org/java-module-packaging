@@ -6,7 +6,9 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.nativeplatform.MachineArchitecture;
 import org.gradle.nativeplatform.OperatingSystemFamily;
 import org.gradlex.javamodule.packaging.model.Target;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class HostIdentification {
 
     public static void validateHostSystem(String arch, String os) {

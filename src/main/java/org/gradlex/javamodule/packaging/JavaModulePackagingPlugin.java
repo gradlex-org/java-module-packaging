@@ -10,8 +10,9 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
 import org.gradlex.javamodule.packaging.internal.HostIdentification;
+import org.jspecify.annotations.NullMarked;
 
-@SuppressWarnings("unused")
+@NullMarked
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
 
     @Inject

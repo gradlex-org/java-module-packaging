@@ -47,7 +47,9 @@ import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.gradlex.javamodule.packaging.model.Target;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
 import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public abstract class JavaModulePackagingExtension {
     private static final boolean MIN_GRADLE_9_0 =
             GradleVersion.current().compareTo(GradleVersion.version("9.0.0")) >= 0;

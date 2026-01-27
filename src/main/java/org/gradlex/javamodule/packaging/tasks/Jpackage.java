@@ -37,7 +37,9 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecSpec;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @CacheableTask
 public abstract class Jpackage extends DefaultTask {
 
@@ -280,7 +282,7 @@ public abstract class Jpackage extends DefaultTask {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return "@" + argsFile.toString();
+        return "@" + argsFile;
     }
 
     private void generateChecksums() throws NoSuchAlgorithmException, IOException {

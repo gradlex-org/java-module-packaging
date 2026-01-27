@@ -22,8 +22,7 @@ class JavaModulePackagingResourcesTest {
     @BeforeEach
     void setup() {
         var macosArch = System.getProperty("os.arch").contains("aarch") ? "aarch64" : "x86-64";
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
             version = "1.0"
             javaModulePackaging {
                 target("macos") {
@@ -39,8 +38,7 @@ class JavaModulePackagingResourcesTest {
                     architecture.set("x86-64")
                 }
             }
-        """
-                        .formatted(macosArch));
+        """.formatted(macosArch));
         build.appModuleInfoFile.writeText("""
             module org.example.app {
             }
@@ -49,8 +47,7 @@ class JavaModulePackagingResourcesTest {
 
     @Test
     void can_configure_jlink_options() {
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
             javaModulePackaging {
                 jlinkOptions.addAll(
                     "--ignore-signing-information",
@@ -70,8 +67,7 @@ class JavaModulePackagingResourcesTest {
 
     @Test
     void can_configure_add_modules() {
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
             javaModulePackaging {
                 addModules.addAll("com.acme.boo")
             }
@@ -119,8 +115,7 @@ class JavaModulePackagingResourcesTest {
 
     @Test
     void can_add_resources_for_app_folder() {
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
             javaModulePackaging {
                 // resource is added to the os-specific 'app' folder inside the image
                 resources.from("res")
@@ -140,8 +135,7 @@ class JavaModulePackagingResourcesTest {
         // Resource is added to the root of the image.
         // This is a target-specific setting as it usually needs to be placed in a place that
         // makes sense in the corresponding package structure.
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
             javaModulePackaging {
                 targetsWithOs("windows") { targetResources.from("res") }
                 targetsWithOs("linux") { targetResources.from("res") }

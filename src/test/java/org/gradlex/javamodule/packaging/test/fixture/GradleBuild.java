@@ -37,15 +37,13 @@ public class GradleBuild {
         this.libBuildFile = file("lib/build.gradle.kts");
         this.libModuleInfoFile = file("lib/src/main/java/module-info.java");
 
-        settingsFile.writeText(
-                """
+        settingsFile.writeText("""
             dependencyResolutionManagement { repositories.mavenCentral() }
             includeBuild(".")
             rootProject.name = "test-project"
             include("app", "lib")
         """);
-        appBuildFile.writeText(
-                """
+        appBuildFile.writeText("""
             plugins {
                 id("org.gradlex.java-module-packaging")
                 id("application")
@@ -59,9 +57,7 @@ public class GradleBuild {
                 mainClass.set("org.example.app.Main")
             }
         """);
-        file("app/src/main/java/org/example/app/Main.java")
-                .writeText(
-                        """
+        file("app/src/main/java/org/example/app/Main.java").writeText("""
             package org.example.app;
 
             public class Main {
@@ -69,9 +65,7 @@ public class GradleBuild {
                 }
             }
             """);
-        file("app/src/test/java/org/example/app/test/MainTest.java")
-                .writeText(
-                        """
+        file("app/src/test/java/org/example/app/test/MainTest.java").writeText("""
             package org.example.app.test;
 
             import org.junit.jupiter.api.Test;
@@ -85,8 +79,7 @@ public class GradleBuild {
             }
             """);
 
-        libBuildFile.writeText(
-                """
+        libBuildFile.writeText("""
             plugins {
                 id("org.gradlex.java-module-packaging")
                 id("java-library")

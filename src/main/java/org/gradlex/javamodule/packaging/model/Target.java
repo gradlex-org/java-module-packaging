@@ -5,7 +5,9 @@ import javax.inject.Inject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public abstract class Target {
 
     private final String name;

@@ -36,8 +36,7 @@ class JavaModulePackagingSmokeTest {
         var taskToRun = ":app:jpackage" + capitalize(label);
         var taskToCheck = ":app:jpackage" + capitalize(label);
         var macosArch = System.getProperty("os.arch").contains("aarch") ? "aarch64" : "x86-64";
-        build.appBuildFile.appendText(
-                """
+        build.appBuildFile.appendText("""
                     version = "1.0"
                     javaModulePackaging {
                         target("macos") {
@@ -53,10 +52,8 @@ class JavaModulePackagingSmokeTest {
                             architecture.set("x86-64")
                         }
                     }
-                """
-                        .formatted(macosArch));
-        build.appModuleInfoFile.writeText(
-                """
+                """.formatted(macosArch));
+        build.appModuleInfoFile.writeText("""
                     module org.example.app {
                     }
                 """);

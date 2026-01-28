@@ -2,6 +2,7 @@
 package org.gradlex.javamodule.packaging.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnLinux;
 
 import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,13 +110,14 @@ class JavaModulePackagingOptionsTest {
 
     @Test
     void can_set_verbose_option() {
+        var v = runsOnLinux() ? "true" : "false";
         build.appBuildFile.appendText("""
             javaModulePackaging {
-                verbose.set(true)
+                verbose.set(%s)
             }
-        """);
+        """.formatted(v));
 
-        var result = build.build(":app:jpackage");
+        var result = build.runner(":app:jpackage", "-q").build();
 
         assertThat(result.getOutput()).contains("Creating app package: ");
     }

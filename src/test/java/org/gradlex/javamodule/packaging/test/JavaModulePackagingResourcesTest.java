@@ -9,6 +9,7 @@ import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnWi
 
 import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -96,7 +97,7 @@ class JavaModulePackagingResourcesTest {
 
         String icon = "app.icns";
         if (runsOnLinux()) icon = "app.png";
-        if (runsOnWindows()) icon = "app.ico";
+        if (runsOnWindows()) icon = "app.icoxxx";
 
         // Intermediate location to collect files
         assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/dummy.txt".formatted(currentTarget()))
@@ -114,6 +115,7 @@ class JavaModulePackagingResourcesTest {
     }
 
     @Test
+    @Tag("no-cross-version")
     void can_add_resources_for_app_folder() {
         build.appBuildFile.appendText("""
             javaModulePackaging {

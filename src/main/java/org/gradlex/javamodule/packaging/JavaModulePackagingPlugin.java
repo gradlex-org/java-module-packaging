@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging;
 
-import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
 import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
-
-    @Inject
-    protected abstract JavaToolchainService getJavaToolchains();
 
     @Override
     public void apply(Project project) {

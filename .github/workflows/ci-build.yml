@@ -7,10 +7,11 @@ on:
     branches: [ main ]
 
 jobs:
-  gradle-build:
+  ci:
     strategy:
       matrix:
         os: [ubuntu, macos, windows]
+      fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: standardize git line endings

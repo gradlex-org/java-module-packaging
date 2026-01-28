@@ -15,8 +15,6 @@ publishingConventions {
     }
 }
 
-testingConventions { testGradleVersions("7.4", "7.6.5", "8.0.2", "8.14.2") }
-
 tasks.test {
     inputs.property("operatingSystemName", System.getProperty("os.name"))
     inputs.property("operatingSystemArch", System.getProperty("os.arch"))

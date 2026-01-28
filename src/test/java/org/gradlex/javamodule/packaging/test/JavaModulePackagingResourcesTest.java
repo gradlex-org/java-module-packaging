@@ -96,7 +96,7 @@ class JavaModulePackagingResourcesTest {
 
         String icon = "app.icns";
         if (runsOnLinux()) icon = "app.png";
-        if (runsOnWindows()) icon = "app.ico";
+        if (runsOnWindows()) icon = "app.icoxxx";
 
         // Intermediate location to collect files
         assertThat(build.file("app/build/tmp/jpackage/%s/jpackage-resources/dummy.txt".formatted(currentTarget()))

@@ -268,7 +268,7 @@ public abstract class Jpackage extends DefaultTask {
         if (!getAddModules().get().isEmpty()) {
             e.args("--add-modules", String.join(",", getAddModules().get()));
         }
-        if (getVerbose().get()) {
+        if (!getVerbose().get()) {
             e.args("--verbose");
         }
     }

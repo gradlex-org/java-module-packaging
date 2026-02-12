@@ -227,7 +227,7 @@ uses GitHub actions with a Gradle remote build cache.
 
 ### How does the plugin interact with the `jpackage` command?
 
-By default, dhe plugin calls `jpackage` in two steps:
+By default, the plugin calls `jpackage` in two steps:
 
 1. Build `--type app-image` as a package-type independent image folder. This is where `jlink` is involved.
 2. Build OS-specific packages via `--type <package-type>`.

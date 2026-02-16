@@ -276,7 +276,7 @@ public abstract class Jpackage extends DefaultTask {
     private String createArgsFile(String modulePathAsPath) {
         Path argsFile = getTemporaryDir().toPath().resolve("args.txt");
         List<String> lines = new ArrayList<>(1);
-        lines.add("--module-path \"" + modulePathAsPath + "\"");
+        lines.add("--module-path \"" + modulePathAsPath.replace('\\', '/') + "\"");
         try {
             Files.write(argsFile, lines);
         } catch (IOException e) {

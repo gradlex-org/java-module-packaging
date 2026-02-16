@@ -189,4 +189,20 @@ class JavaModulePackagingOptionsTest {
         assertThat(build.appImageFolder().getAsPath())
                 .isDirectoryNotContaining(f -> f.toFile().isDirectory());
     }
+
+    @Test
+    void works_if_module_path_contains_spaces() {
+        var lib2BuildFile = build.file("lib 2 with spaces/build.gradle.kts");
+        var lib2ModuleInfoFile = build.file("lib 2 with spaces/src/main/java/module-info.java");
+
+        build.settingsFile.appendText("""
+                include(":lib2")
+                project(":lib2").projectDir = file("lib 2 with spaces")
+                """);
+        build.appBuildFile.appendText("dependencies { implementation(project(\":lib2\")) }");
+        lib2BuildFile.writeText("plugins { id(\"java-library\") }");
+        lib2ModuleInfoFile.writeText("module org.example.libtwo { }");
+
+        build.build(":app:jpackage");
+    }
 }

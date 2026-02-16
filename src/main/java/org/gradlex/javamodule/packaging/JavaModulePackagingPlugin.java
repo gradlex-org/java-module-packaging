@@ -29,7 +29,7 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
         SourceDirectorySet mainResources = sourceSets.getByName("main").getResources();
 
         JavaModulePackagingExtension javaModulePackaging =
-                project.getExtensions().create("javaModulePackaging", JavaModulePackagingExtension.class);
+                project.getExtensions().create("javaModulePackaging", JavaModulePackagingExtension.class, project);
         javaModulePackaging.getApplicationName().convention(project.getName());
         javaModulePackaging.getApplicationVersion().convention(project.provider(() -> (String) project.getVersion()));
         javaModulePackaging.getJpackageResources().convention(project.provider(() -> project.getLayout()

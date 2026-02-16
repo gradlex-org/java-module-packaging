@@ -57,6 +57,8 @@ public abstract class JavaModulePackagingExtension {
     private static final String INTERNAL = "internal";
     private static final String JPACKAGE = "jpackage";
 
+    private final Project project;
+
     public abstract Property<String> getApplicationName();
 
     public abstract Property<String> getApplicationVersion();
@@ -86,7 +88,9 @@ public abstract class JavaModulePackagingExtension {
     protected abstract ObjectFactory getObjects();
 
     @Inject
-    protected abstract Project getProject();
+    public JavaModulePackagingExtension(Project project) {
+        this.project = project;
+    }
 
     /**
      * Retrieve the target with the given 'label'. If the target does not yet exist, it will be created.
@@ -130,8 +134,8 @@ public abstract class JavaModulePackagingExtension {
      */
     @SuppressWarnings("unused")
     public Target primaryTarget(Target target) {
-        SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
-        ConfigurationContainer configurations = getProject().getConfigurations();
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        ConfigurationContainer configurations = project.getConfigurations();
 
         sourceSets.all(sourceSet -> {
             // Use this target for target-independent classpaths to make some decision
@@ -165,14 +169,13 @@ public abstract class JavaModulePackagingExtension {
                             task.getInputs().property("operatingSystem", target.getOperatingSystem());
                             task.getInputs().property("architecture", target.getArchitecture());
 
-                            ConfigurationContainer configurations = getProject().getConfigurations();
+                            ConfigurationContainer configurations = project.getConfigurations();
                             task.setClasspath(configurations
                                     .getByName(target.getName()
                                             + capitalize(suite.getSources().getRuntimeClasspathConfigurationName()))
                                     .plus(getObjects()
                                             .fileCollection()
-                                            .from(getProject()
-                                                    .getTasks()
+                                            .from(project.getTasks()
                                                     .named(suite.getSources().getJarTaskName()))));
                             task.doFirst(new ValidateHostSystemAction());
                         })));
@@ -193,8 +196,8 @@ public abstract class JavaModulePackagingExtension {
             return Collections.emptyList();
         }));
 
-        ConfigurationContainer configurations = getProject().getConfigurations();
-        SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
+        ConfigurationContainer configurations = project.getConfigurations();
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
 
         sourceSets.all(sourceSet -> {
             Configuration internal = maybeCreateInternalConfiguration();
@@ -222,8 +225,7 @@ public abstract class JavaModulePackagingExtension {
                     });
 
             if (SourceSet.isMain(sourceSet)) {
-                getProject()
-                        .getPlugins()
+                project.getPlugins()
                         .withType(
                                 ApplicationPlugin.class,
                                 p -> registerTargetSpecificTasks(target, sourceSet.getJarTaskName(), runtimeClasspath));
@@ -267,10 +269,10 @@ public abstract class JavaModulePackagingExtension {
     }
 
     private void registerTargetSpecificTasks(Target target, String applicationJarTask, Configuration runtimeClasspath) {
-        TaskContainer tasks = getProject().getTasks();
+        TaskContainer tasks = project.getTasks();
 
-        JavaPluginExtension java = getProject().getExtensions().getByType(JavaPluginExtension.class);
-        JavaApplication application = getProject().getExtensions().getByType(JavaApplication.class);
+        JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
+        JavaApplication application = project.getExtensions().getByType(JavaApplication.class);
 
         TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
             t.getJavaInstallation()
@@ -302,9 +304,9 @@ public abstract class JavaModulePackagingExtension {
             t.getVerbose().convention(getVerbose());
 
             t.getDestination()
-                    .convention(getProject().getLayout().getBuildDirectory().dir("packages/" + target.getName()));
+                    .convention(project.getLayout().getBuildDirectory().dir("packages/" + target.getName()));
             t.getTempDirectory()
-                    .convention(getProject().getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
+                    .convention(project.getLayout().getBuildDirectory().dir("tmp/jpackage/" + target.getName()));
         });
 
         tasks.register("run" + capitalize(target.getName()), JavaExec.class, t -> {
@@ -339,11 +341,11 @@ public abstract class JavaModulePackagingExtension {
     }
 
     private Configuration maybeCreateInternalConfiguration() {
-        Configuration internal = getProject().getConfigurations().findByName(INTERNAL);
+        Configuration internal = project.getConfigurations().findByName(INTERNAL);
         if (internal != null) {
             return internal;
         }
-        return getProject().getConfigurations().create(INTERNAL, i -> {
+        return project.getConfigurations().create(INTERNAL, i -> {
             i.setCanBeResolved(false);
             i.setCanBeConsumed(false);
         });

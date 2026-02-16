@@ -15,10 +15,10 @@ public class HostIdentification {
         String hostOs = hostOs();
         String hostArch = hostArch();
 
-        if (!normalizeOs(hostOs).equals(normalizeOs(os))) {
+        if (!hostOs.equals(normalizeOs(os))) {
             wrongHostSystemError(hostOs, os);
         }
-        if (!normalizeArch(hostArch).equals(normalizeArch(arch))) {
+        if (!hostArch.equals(normalizeArch(arch))) {
             wrongHostSystemError(hostArch, arch);
         }
     }
@@ -34,7 +34,7 @@ public class HostIdentification {
         return target.getOperatingSystem().isPresent()
                 && target.getArchitecture().isPresent()
                 && target.getOperatingSystem().get().equals(hostOs())
-                && target.getArchitecture().get().equals(normalizeArch(hostArch()));
+                && target.getArchitecture().get().equals(hostArch());
     }
 
     private static String hostOs() {
@@ -42,7 +42,7 @@ public class HostIdentification {
     }
 
     private static String hostArch() {
-        return System.getProperty("os.arch");
+        return normalizeArch(System.getProperty("os.arch"));
     }
 
     private static String normalizeOs(String name) {

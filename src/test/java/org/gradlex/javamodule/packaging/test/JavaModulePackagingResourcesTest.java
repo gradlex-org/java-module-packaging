@@ -10,6 +10,8 @@ import static org.gradlex.javamodule.packaging.test.fixture.GradleBuild.runsOnWi
 import org.gradlex.javamodule.packaging.test.fixture.GradleBuild;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /**
  * Tests for adding custom resources to the image/package.
@@ -79,6 +81,7 @@ class JavaModulePackagingResourcesTest {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void can_add_resources_for_jpackage() {
         // Use 'src/main/resourcesPackage', which is the convention
 

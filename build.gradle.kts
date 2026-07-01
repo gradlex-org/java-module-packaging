@@ -17,7 +17,15 @@ publishingConventions {
 
 testingConventions { testGradleVersions("7.4", "7.6.5", "8.0.2", "8.14.2") }
 
-tasks.test {
+tasks.withType<Test>().configureEach {
     inputs.property("operatingSystemName", System.getProperty("os.name"))
     inputs.property("operatingSystemArch", System.getProperty("os.arch"))
+    environment["JAVA_25"] =
+        javaToolchains
+            .launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+            .get()
+            .metadata
+            .installationPath
+            .asFile
+            .absolutePath
 }

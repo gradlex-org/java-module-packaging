@@ -45,6 +45,7 @@ import org.gradle.testing.base.TestSuite;
 import org.gradle.util.GradleVersion;
 import org.gradlex.javamodule.packaging.internal.HostIdentification;
 import org.gradlex.javamodule.packaging.model.Target;
+import org.gradlex.javamodule.packaging.tasks.FatModuleJar;
 import org.gradlex.javamodule.packaging.tasks.Jpackage;
 import org.gradlex.javamodule.packaging.tasks.ValidateHostSystemAction;
 import org.jspecify.annotations.NullMarked;
@@ -56,6 +57,7 @@ public abstract class JavaModulePackagingExtension {
     private static final Attribute<Boolean> JAVA_MODULE_ATTRIBUTE = Attribute.of("javaModule", Boolean.class);
     private static final String INTERNAL = "internal";
     private static final String JPACKAGE = "jpackage";
+    private static final String FAT_MODULE_JAR = "fatModuleJar";
 
     private final Project project;
 
@@ -95,7 +97,6 @@ public abstract class JavaModulePackagingExtension {
     /**
      * Retrieve the target with the given 'label'. If the target does not yet exist, it will be created.
      */
-    @SuppressWarnings("unused")
     public Target target(String label) {
         return target(label, target -> {});
     }
@@ -120,7 +121,6 @@ public abstract class JavaModulePackagingExtension {
     /**
      * Configure all targets for the given OS.
      */
-    @SuppressWarnings("unused")
     public void targetsWithOs(String operatingSystem, Action<? super Target> action) {
         NamedDomainObjectSet<Target> matches =
                 targets.matching(t -> t.getOperatingSystem().isPresent()
@@ -132,7 +132,6 @@ public abstract class JavaModulePackagingExtension {
      * Set a 'primary target'. Standard Gradle tasks that are not bound to a specific target – like 'assemble' – use
      * this 'primary target'.
      */
-    @SuppressWarnings("unused")
     public Target primaryTarget(Target target) {
         SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
         ConfigurationContainer configurations = project.getConfigurations();
@@ -155,7 +154,6 @@ public abstract class JavaModulePackagingExtension {
     /**
      * Set a test suite to be 'multi-target'. This registers an additional 'test' task for each target.
      */
-    @SuppressWarnings({"unused", "UnstableApiUsage"})
     public TestSuite multiTargetTestSuite(TestSuite testSuite) {
         if (!(testSuite instanceof JvmTestSuite)) {
             return testSuite;
@@ -183,7 +181,18 @@ public abstract class JavaModulePackagingExtension {
         return testSuite;
     }
 
+    void maybeAddSingleDefaultTarget(Target target) {
+        if (targets.isEmpty()) {
+            targets.add(target);
+            newTarget(target, true);
+        }
+    }
+
     private void newTarget(Target target) {
+        newTarget(target, false);
+    }
+
+    private void newTarget(Target target, boolean singleDefault) {
         target.getPackageTypes().convention(target.getOperatingSystem().map(os -> {
             switch (os) {
                 case WINDOWS:
@@ -200,35 +209,41 @@ public abstract class JavaModulePackagingExtension {
         SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
 
         sourceSets.all(sourceSet -> {
-            Configuration internal = maybeCreateInternalConfiguration();
-            configurations.create(
-                    target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
-                        c.setCanBeConsumed(false);
-                        setInvisible(c);
-                        configureJavaStandardAttributes(c, Usage.JAVA_API);
-                        configureTargetAttributes(c, target);
-                        c.extendsFrom(
-                                configurations.getByName(sourceSet.getImplementationConfigurationName()),
-                                configurations.getByName(sourceSet.getCompileOnlyConfigurationName()),
-                                internal);
-                    });
-            Configuration runtimeClasspath = configurations.create(
-                    target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
-                        c.setCanBeConsumed(false);
-                        setInvisible(c);
-                        configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
-                        configureTargetAttributes(c, target);
-                        c.extendsFrom(
-                                configurations.getByName(sourceSet.getImplementationConfigurationName()),
-                                configurations.getByName(sourceSet.getRuntimeOnlyConfigurationName()),
-                                internal);
-                    });
+            Configuration runtimeClasspath;
+            if (singleDefault) {
+                runtimeClasspath = configurations.getByName(sourceSet.getRuntimeClasspathConfigurationName());
+            } else {
+                Configuration internal = maybeCreateInternalConfiguration();
+                configurations.create(
+                        target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
+                            c.setCanBeConsumed(false);
+                            setInvisible(c);
+                            configureJavaStandardAttributes(c, Usage.JAVA_API);
+                            configureTargetAttributes(c, target);
+                            c.extendsFrom(
+                                    configurations.getByName(sourceSet.getImplementationConfigurationName()),
+                                    configurations.getByName(sourceSet.getCompileOnlyConfigurationName()),
+                                    internal);
+                        });
+                runtimeClasspath = configurations.create(
+                        target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
+                            c.setCanBeConsumed(false);
+                            setInvisible(c);
+                            configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
+                            configureTargetAttributes(c, target);
+                            c.extendsFrom(
+                                    configurations.getByName(sourceSet.getImplementationConfigurationName()),
+                                    configurations.getByName(sourceSet.getRuntimeOnlyConfigurationName()),
+                                    internal);
+                        });
+            }
 
             if (SourceSet.isMain(sourceSet)) {
                 project.getPlugins()
                         .withType(
                                 ApplicationPlugin.class,
-                                p -> registerTargetSpecificTasks(target, sourceSet.getJarTaskName(), runtimeClasspath));
+                                p -> registerTargetSpecificTasks(
+                                        target, singleDefault, sourceSet.getJarTaskName(), runtimeClasspath));
             }
         });
     }
@@ -268,13 +283,16 @@ public abstract class JavaModulePackagingExtension {
                         target.getArchitecture().map(name -> getObjects().named(MachineArchitecture.class, name)));
     }
 
-    private void registerTargetSpecificTasks(Target target, String applicationJarTask, Configuration runtimeClasspath) {
+    private void registerTargetSpecificTasks(
+            Target target, boolean singleDefaultTarget, String applicationJarTask, Configuration runtimeClasspath) {
         TaskContainer tasks = project.getTasks();
 
         JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
         JavaApplication application = project.getExtensions().getByType(JavaApplication.class);
 
         TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
+            t.setDescription("Runs 'jpackage' command to create an image or s package.");
+
             t.getJavaInstallation()
                     .convention(getJavaToolchains()
                             .compilerFor(java.getToolchain())
@@ -318,12 +336,43 @@ public abstract class JavaModulePackagingExtension {
             t.setJvmArgs(application.getApplicationDefaultJvmArgs());
             t.classpath(tasks.named("jar"), runtimeClasspath);
         });
-        maybeAddJpackageLifecycleTask(tasks, target, jpackage);
+
+        registerFatModuleJarTask(target, singleDefaultTarget, applicationJarTask, runtimeClasspath);
+
+        maybeAddJpackageLifecycleTask(target, jpackage);
     }
 
-    private void maybeAddJpackageLifecycleTask(
-            TaskContainer tasks, Target target, TaskProvider<Jpackage> targetJpackage) {
-        // if a task already exists, do nothing to avoid conflciting with other plugins
+    private void registerFatModuleJarTask(
+            Target target, boolean singleDefaultTarget, String applicationJarTask, Configuration runtimeClasspath) {
+        TaskContainer tasks = project.getTasks();
+        JavaApplication application = project.getExtensions().getByType(JavaApplication.class);
+        ConfigurationContainer configurations = project.getConfigurations();
+
+        String taskName = FAT_MODULE_JAR + (singleDefaultTarget ? "" : capitalize(target.getName()));
+        tasks.register(taskName, FatModuleJar.class, t -> {
+            String classifier = singleDefaultTarget ? "all" : "all-" + target.getName();
+
+            t.setDescription("Assembles a fat jar archive containing the complete module path and a launcher.");
+
+            t.getMainModule().convention(application.getMainModule());
+            t.getMainClass().convention(application.getMainClass());
+
+            t.getLauncherPath().from(configurations.named("fatModuleJarLauncherPath"));
+            t.getLauncherMainClass().convention("build.jenesis.launcher.Launcher");
+
+            t.getModulePath().from(tasks.named(applicationJarTask));
+            t.getModulePath().from(runtimeClasspath);
+
+            t.setZip64(true);
+
+            t.getArchiveClassifier().set(classifier);
+        });
+    }
+
+    private void maybeAddJpackageLifecycleTask(Target target, TaskProvider<Jpackage> targetJpackage) {
+        TaskContainer tasks = project.getTasks();
+
+        // if a task already exists, do nothing to avoid conflict with other plugins
         TaskProvider<Task> jpackage;
         if (tasks.getNames().contains(JPACKAGE)) {
             jpackage = tasks.named(JPACKAGE);

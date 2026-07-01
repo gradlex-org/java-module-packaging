@@ -46,6 +46,7 @@ public class GradleBuild {
         appBuildFile.writeText("""
             plugins {
                 id("org.gradlex.java-module-packaging")
+                id("org.gradlex.jvm-dependency-conflict-resolution") version "2.5"
                 id("application")
             }
             group = "org.example"
@@ -123,7 +124,7 @@ public class GradleBuild {
                 .getInputArguments()
                 .toString()
                 .contains("-agentlib:jdwp");
-        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation
+        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation || debugMode
                 ? List.of()
                 : List.of("--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
         Stream<String> standardArgs = Stream.of("-s", "--warning-mode=all");

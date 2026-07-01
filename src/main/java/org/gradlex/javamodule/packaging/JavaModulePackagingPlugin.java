@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging;
 
-import javax.inject.Inject;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
 import org.gradlex.javamodule.packaging.internal.HostIdentification;
+import org.gradlex.javamodule.packaging.model.Target;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
-
-    @Inject
-    protected abstract JavaToolchainService getJavaToolchains();
 
     @Override
     public void apply(Project project) {
@@ -36,6 +38,34 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
                 .getProjectDirectory()
                 .dir(mainResources.getSrcDirs().iterator().next().getParent() + "/resourcesPackage")));
         javaModulePackaging.getVerbose().convention(false);
-        javaModulePackaging.primaryTarget(HostIdentification.hostTarget(project.getObjects()));
+
+        Target hostTarget = HostIdentification.hostTarget(project.getObjects());
+        javaModulePackaging.primaryTarget(hostTarget);
+        project.afterEvaluate(__ -> javaModulePackaging.maybeAddSingleDefaultTarget(hostTarget));
+
+        registerFatModuleJarLauncherScope(project);
+    }
+
+    private void registerFatModuleJarLauncherScope(Project project) {
+        ObjectFactory objects = project.getObjects();
+        ConfigurationContainer configurations = project.getConfigurations();
+        DependencyHandler dependencies = project.getDependencies();
+
+        Provider<Configuration> fatModuleJarLauncher = configurations.register("fatModuleJarLauncher", c -> {
+            c.setCanBeConsumed(false);
+            c.setCanBeResolved(false);
+            c.withDependencies(deps -> {
+                if (deps.isEmpty()) {
+                    deps.add(dependencies.create("build.jenesis:build.jenesis.launcher:0.3.0"));
+                }
+            });
+        });
+
+        configurations.register("fatModuleJarLauncherPath", c -> {
+            c.setCanBeConsumed(false);
+            c.setCanBeResolved(true);
+            c.extendsFrom(fatModuleJarLauncher.get());
+            c.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_RUNTIME));
+        });
     }
 }

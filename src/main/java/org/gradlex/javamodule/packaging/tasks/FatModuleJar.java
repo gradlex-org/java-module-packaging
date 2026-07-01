@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: Apache-2.0
+package org.gradlex.javamodule.packaging.tasks;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonMap;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import javax.inject.Inject;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.internal.file.FileOperations;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.bundling.Jar;
+
+public abstract class FatModuleJar extends Jar {
+
+    @Classpath
+    public abstract ConfigurableFileCollection getModulePath();
+
+    @Input
+    public abstract Property<String> getMainModule();
+
+    @Input
+    public abstract Property<String> getMainClass();
+
+    @Classpath
+    public abstract ConfigurableFileCollection getLauncherPath();
+
+    @Input
+    public abstract Property<String> getLauncherMainClass();
+
+    @Inject
+    protected abstract FileOperations getFiles();
+
+    @Override
+    protected void copy() {
+        File applicationProperties = writeApplicationProperties();
+        from(applicationProperties);
+
+        from(getFiles().zipTree(getLauncherPath().getSingleFile()));
+
+        into("modulepath", pathFolder -> {
+            for (File jar : getModulePath()) {
+                pathFolder.into(
+                        nameWithoutExtension(jar),
+                        moduleFolder -> moduleFolder.from(getFiles().zipTree(jar)));
+            }
+        });
+
+        getManifest()
+                .attributes(singletonMap("Main-Class", getLauncherMainClass().get()));
+
+        super.copy();
+    }
+
+    private File writeApplicationProperties() {
+        File applicationProperties = new File(getTemporaryDir(), "application.properties");
+        try {
+            Files.createDirectories(applicationProperties.toPath().getParent());
+            Files.write(
+                    applicationProperties.toPath(),
+                    String.format(
+                                    "mainModule=%s\nmainClass=%s",
+                                    getMainModule().get(), getMainClass().get())
+                            .getBytes(UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return applicationProperties;
+    }
+
+    private String nameWithoutExtension(File file) {
+        return file.getName().substring(0, file.getName().lastIndexOf('.'));
+    }
+}

@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu, macos, windows]
+      fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: standardize git line endings
@@ -21,7 +22,9 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: |
+            25.0.3
+            17.0.19
       - uses: gradle/actions/setup-gradle@v6
         with:
           build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"

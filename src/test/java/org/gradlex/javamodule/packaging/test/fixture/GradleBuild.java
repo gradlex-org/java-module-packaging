@@ -37,6 +37,15 @@ public class GradleBuild {
         this.libBuildFile = file("lib/build.gradle.kts");
         this.libModuleInfoFile = file("lib/src/main/java/module-info.java");
 
+        var makeReproducible = GRADLE_VERSION_UNDER_TEST == null ? "" : """
+                tasks.withType<Jar>().configureEach {
+                    isPreserveFileTimestamps = false
+                    isReproducibleFileOrder = true
+                    dirMode = "0755".toInt(8)
+                    fileMode = "0644".toInt(8)
+                }
+                """;
+
         settingsFile.writeText("""
             dependencyResolutionManagement { repositories.mavenCentral() }
             includeBuild(".")
@@ -46,6 +55,7 @@ public class GradleBuild {
         appBuildFile.writeText("""
             plugins {
                 id("org.gradlex.java-module-packaging")
+                id("org.gradlex.jvm-dependency-conflict-resolution") version "2.5"
                 id("application")
             }
             group = "org.example"
@@ -56,7 +66,8 @@ public class GradleBuild {
                 mainModule.set("org.example.app")
                 mainClass.set("org.example.app.Main")
             }
-        """);
+            %s
+        """.formatted(makeReproducible));
         file("app/src/main/java/org/example/app/Main.java").writeText("""
             package org.example.app;
 
@@ -123,7 +134,7 @@ public class GradleBuild {
                 .getInputArguments()
                 .toString()
                 .contains("-agentlib:jdwp");
-        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation
+        List<String> latestFeaturesArgs = GRADLE_VERSION_UNDER_TEST != null || !projectIsolation || debugMode
                 ? List.of()
                 : List.of("--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
         Stream<String> standardArgs = Stream.of("-s", "--warning-mode=all");

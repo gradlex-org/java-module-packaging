@@ -24,7 +24,7 @@ public class HostIdentification {
     }
 
     public static Target hostTarget(ObjectFactory objects) {
-        Target host = objects.newInstance(Target.class, "host");
+        Target host = objects.newInstance(Target.class, hostOs());
         host.getOperatingSystem().convention(hostOs());
         host.getArchitecture().convention(normalizeArch(System.getProperty("os.arch")));
         return host;

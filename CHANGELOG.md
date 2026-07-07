@@ -1,7 +1,9 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
 ## Version 1.3
+- [#121](https://github.com/gradlex-org/java-module-packaging/issues/121) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
 - [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation
+- [#121](https://github.com/gradlex-org/java-module-packaging/issues/121) - Default target based on host system If no target is defined
 
 ## Version 1.2.1
 * [Fixed] [#99](https://github.com/gradlex-org/java-module-packaging/issues/99) - Handle paths with spaces in args file (Thanks [Oliver Kopp](https://github.com/koppor) for contributing!)

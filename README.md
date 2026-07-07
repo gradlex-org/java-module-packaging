@@ -86,20 +86,34 @@ javaModulePackaging {
 You can now run _target-specific_ builds:
 
 ```shell
+# package self-contained Java application or image with jpackage/jlink
 ./gradlew jpackageWindows
 ```
 
 ```shell
+# package fat Jar containing 'class' files of all modules and a launcher
+./gradlew fatModuleJarWindows
+```
+
+```shell
+# run a target (os/arch) specific build
 ./gradlew runWindows
 ```
 
 Or, for convenience, let the plugin pick the target fitting the machine you run on:
 
 ```shell
+# package self-contained Java application or image with jpackage/jlink
 ./gradlew jpackage
 ```
 
 ```shell
+# package fat Jar containing 'class' files of all modules and a launcher
+./gradlew fatModuleJar
+```
+
+```shell
+# run a target (os/arch) specific build
 ./gradlew run
 ```
 
@@ -265,6 +279,29 @@ javaModulePackaging {
 ```
 
 You can tell the plugin to perform packaging in one step by setting the `singleStepPackaging = true` option on a target.
+
+### How does a `fatModuleJar` work?
+
+The structure of the Jar follows the structure defined by the [Jenesis Launcher](https://github.com/raphw/jenesis-launcher).
+All original Java modules, including their `module-info.class` files, are preserved in the `modulepath` folder
+in the fat Jar. In order to make such a Jar run, a launcher is required. By default, the `build.jenesis:build.jenesis.launcher`
+code is packaged into the Jar.
+
+You may define your own launcher code, for example in a separate Gradle subproject, and then pakage that instead:
+
+```kotlin
+dependencies {
+  fatModuleJarLauncher(project(":example-jar-launcher"))
+}
+tasks.withType<FatModuleJar>().configureEach {
+  launcherMainClass = "org.example.Launcher" 
+}
+```
+
+Note: currently the plugin assumes that all launchers follow the Jenisis Launcher structure of a `modulepath/` folder
+and a `application.properties` file. If you require more flexibility to attach a different launcher, please give
+feedback by [opening and issue](https://github.com/gradlex-org/java-module-packaging/issues).
+
 
 # Disclaimer
 

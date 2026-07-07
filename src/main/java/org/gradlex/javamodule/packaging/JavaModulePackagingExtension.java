@@ -395,7 +395,6 @@ public abstract class JavaModulePackagingExtension {
             jpackage = tasks.named(JPACKAGE);
         } else {
             jpackage = tasks.register(JPACKAGE, t -> {
-                t.setGroup(BUILD_GROUP);
                 t.setDescription("Build the package for the current host system");
             });
         }

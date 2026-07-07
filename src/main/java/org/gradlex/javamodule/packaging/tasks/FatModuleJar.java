@@ -45,6 +45,12 @@ public abstract class FatModuleJar extends Jar {
     @Inject
     protected abstract FileOperations getFiles();
 
+    public FatModuleJar() {
+        getLauncherPath().from(getProject().getConfigurations().named("fatModuleJarLauncherPath"));
+        getLauncherMainClass().convention("build.jenesis.launcher.Launcher");
+        setZip64(true);
+    }
+
     @Override
     protected void copy() {
         getManifest()

@@ -13,7 +13,6 @@ import static org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE;
 import static org.gradle.api.attributes.java.TargetJvmEnvironment.STANDARD_JVM;
 import static org.gradle.api.attributes.java.TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE;
 import static org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE;
-import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_GROUP;
 import static org.gradle.nativeplatform.MachineArchitecture.ARCHITECTURE_ATTRIBUTE;
 import static org.gradle.nativeplatform.OperatingSystemFamily.LINUX;
 import static org.gradle.nativeplatform.OperatingSystemFamily.MACOS;
@@ -203,6 +202,10 @@ public abstract class JavaModulePackagingExtension {
         return testSuite;
     }
 
+    void registerSingleDefaultTargetTasks() {
+        project.getTasks().register(FAT_MODULE_JAR, FatModuleJar.class);
+    }
+
     void maybeAddSingleDefaultTarget(Target target) {
         if (targets.isEmpty()) {
             targets.add(target);
@@ -363,25 +366,21 @@ public abstract class JavaModulePackagingExtension {
             Target target, boolean singleDefaultTarget, String applicationJarTask, Configuration runtimeClasspath) {
         TaskContainer tasks = project.getTasks();
         JavaApplication application = project.getExtensions().getByType(JavaApplication.class);
-        ConfigurationContainer configurations = project.getConfigurations();
 
-        String taskName = FAT_MODULE_JAR + (singleDefaultTarget ? "" : capitalize(target.getName()));
-        tasks.register(taskName, FatModuleJar.class, t -> {
-            String classifier = singleDefaultTarget ? "all" : "all-" + target.getName();
+        TaskProvider<FatModuleJar> fatModuleJar = singleDefaultTarget
+                ? tasks.named(FAT_MODULE_JAR, FatModuleJar.class)
+                : tasks.register(FAT_MODULE_JAR + capitalize(target.getName()), FatModuleJar.class);
 
+        fatModuleJar.configure(t -> {
             t.setDescription("Assembles a fat jar archive containing the complete module path and a launcher.");
 
             t.getMainModule().convention(application.getMainModule());
             t.getMainClass().convention(application.getMainClass());
 
-            t.getLauncherPath().from(configurations.named("fatModuleJarLauncherPath"));
-            t.getLauncherMainClass().convention("build.jenesis.launcher.Launcher");
-
             t.getModulePath().from(tasks.named(applicationJarTask));
             t.getModulePath().from(runtimeClasspath);
 
-            t.setZip64(true);
-
+            String classifier = singleDefaultTarget ? "all" : "all-" + target.getName();
             t.getArchiveClassifier().set(classifier);
         });
     }

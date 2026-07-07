@@ -49,6 +49,8 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
 
         Target hostTarget = HostIdentification.hostTarget(project.getObjects());
         javaModulePackaging.primaryTarget(hostTarget);
+
+        javaModulePackaging.registerSingleDefaultTargetTasks();
         project.afterEvaluate(__ -> javaModulePackaging.maybeAddSingleDefaultTarget(hostTarget));
 
         registerFatModuleJarLauncherScope(project);

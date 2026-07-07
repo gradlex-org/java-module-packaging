@@ -67,10 +67,16 @@ public abstract class FatModuleJar extends Jar {
                 .collect(Collectors.toList()));
 
         extendedSpec.into("modulepath", pathFolder -> {
-            for (File jar : getModulePath()) {
-                pathFolder.into(
-                        nameWithoutExtension(jar),
-                        moduleFolder -> moduleFolder.from(getArchives().zipTree(jar)));
+            for (File jarOrFolder : getModulePath()) {
+                if (jarOrFolder.exists()) {
+                    if (jarOrFolder.isDirectory()) {
+                        pathFolder.into(jarOrFolder.getName(), moduleFolder -> moduleFolder.from(jarOrFolder));
+                    } else {
+                        pathFolder.into(
+                                nameWithoutExtension(jarOrFolder),
+                                moduleFolder -> moduleFolder.from(getArchives().zipTree(jarOrFolder)));
+                    }
+                }
             }
         });
 
@@ -96,6 +102,10 @@ public abstract class FatModuleJar extends Jar {
     }
 
     private String nameWithoutExtension(File file) {
-        return file.getName().substring(0, file.getName().lastIndexOf('.'));
+        int idx = file.getName().lastIndexOf('.');
+        if (idx == -1) {
+            return file.getName();
+        }
+        return file.getName().substring(0, idx);
     }
 }

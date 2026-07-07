@@ -7,6 +7,7 @@ import static java.util.Collections.singletonMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.gradle.api.file.ArchiveOperations;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -55,9 +56,9 @@ public abstract class FatModuleJar extends Jar {
         File applicationProperties = writeApplicationProperties();
         extendedSpec.from(applicationProperties);
 
-        extendedSpec.from(getArchives()
-                .zipTree(getLauncherPath().getSingleFile())
-                .matching(f -> f.exclude("META-INF/MANIFEST.MF")));
+        extendedSpec.from(getLauncherPath().getFiles().stream()
+                .map(jar -> getArchives().zipTree(jar).matching(f -> f.exclude("META-INF/MANIFEST.MF")))
+                .collect(Collectors.toList()));
 
         extendedSpec.into("modulepath", pathFolder -> {
             for (File jar : getModulePath()) {

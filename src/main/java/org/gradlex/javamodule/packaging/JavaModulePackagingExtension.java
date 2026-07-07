@@ -298,7 +298,7 @@ public abstract class JavaModulePackagingExtension {
         JavaApplication application = project.getExtensions().getByType(JavaApplication.class);
 
         TaskProvider<Jpackage> jpackage = tasks.register(JPACKAGE + capitalize(target.getName()), Jpackage.class, t -> {
-            t.setDescription("Runs 'jpackage' command to create an image or s package.");
+            t.setDescription("Runs 'jpackage' command to create an image or a package.");
 
             t.getJavaInstallation()
                     .convention(getJavaToolchains()

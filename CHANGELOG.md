@@ -1,7 +1,7 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
 ## Version 1.3
-- [#121](https://github.com/gradlex-org/java-module-packaging/issues/121) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
+- [#122](https://github.com/gradlex-org/java-module-packaging/issues/122) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
 - [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation
 - [#121](https://github.com/gradlex-org/java-module-packaging/issues/121) - Default target based on host system If no target is defined
 

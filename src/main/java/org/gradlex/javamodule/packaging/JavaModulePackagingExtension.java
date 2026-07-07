@@ -129,6 +129,13 @@ public abstract class JavaModulePackagingExtension {
     }
 
     /**
+     * Configure all targets.
+     */
+    public void allTargets(Action<? super Target> action) {
+        targets.all(action);
+    }
+
+    /**
      * Set a 'primary target'. Standard Gradle tasks that are not bound to a specific target – like 'assemble' – use
      * this 'primary target'.
      */

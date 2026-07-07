@@ -1,5 +1,8 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
+## Version 1.3
+- [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation
+
 ## Version 1.2.1
 * [Fixed] [#99](https://github.com/gradlex-org/java-module-packaging/issues/99) - Handle paths with spaces in args file (Thanks [Oliver Kopp](https://github.com/koppor) for contributing!)
 

@@ -172,6 +172,22 @@ class JavaModulePackagingOptionsTest {
     }
 
     @Test
+    void can_set_target_specific_option_for_app_image_via_all_targets() {
+        build.appBuildFile.appendText("""
+            javaModulePackaging {
+                allTargets {
+                    options.addAll("--dummy") // no effect as app-image fails first
+                    appImageOptions.addAll("--dummyimg")
+                }
+            }
+        """);
+
+        var result = build.fail(":app:jpackage");
+
+        assertThat(result.getOutput()).contains("Error: Invalid Option: [--dummyimg]");
+    }
+
+    @Test
     void can_build_package_in_one_step() {
         build.appBuildFile.appendText("""
             javaModulePackaging {

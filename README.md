@@ -258,6 +258,9 @@ javaModulePackaging {
   targetsWithOs("windows") { // all targets of for a certain os
     // ...
   }
+  allTargets {  // all target
+    // ...
+  }
 }
 ```
 

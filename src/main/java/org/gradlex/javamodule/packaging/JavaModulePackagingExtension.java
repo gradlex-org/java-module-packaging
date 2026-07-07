@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging;
 
+import static org.gradle.api.attributes.Bundling.BUNDLING_ATTRIBUTE;
+import static org.gradle.api.attributes.Bundling.EXTERNAL;
+import static org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE;
+import static org.gradle.api.attributes.Category.LIBRARY;
+import static org.gradle.api.attributes.LibraryElements.JAR;
+import static org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE;
+import static org.gradle.api.attributes.Usage.JAVA_API;
+import static org.gradle.api.attributes.Usage.JAVA_RUNTIME;
+import static org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE;
+import static org.gradle.api.attributes.java.TargetJvmEnvironment.STANDARD_JVM;
+import static org.gradle.api.attributes.java.TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE;
+import static org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE;
 import static org.gradle.language.base.plugins.LifecycleBasePlugin.BUILD_GROUP;
 import static org.gradle.nativeplatform.MachineArchitecture.ARCHITECTURE_ATTRIBUTE;
 import static org.gradle.nativeplatform.OperatingSystemFamily.LINUX;
@@ -19,6 +31,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Bundling;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.LibraryElements;
@@ -33,11 +46,13 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.jvm.JvmTestSuite;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.nativeplatform.MachineArchitecture;
 import org.gradle.nativeplatform.OperatingSystemFamily;
@@ -225,7 +240,7 @@ public abstract class JavaModulePackagingExtension {
                         target.getName() + capitalize(sourceSet.getCompileClasspathConfigurationName()), c -> {
                             c.setCanBeConsumed(false);
                             setInvisible(c);
-                            configureJavaStandardAttributes(c, Usage.JAVA_API);
+                            configureJavaStandardAttributes(c, JAVA_API);
                             configureTargetAttributes(c, target);
                             c.extendsFrom(
                                     configurations.getByName(sourceSet.getImplementationConfigurationName()),
@@ -236,7 +251,7 @@ public abstract class JavaModulePackagingExtension {
                         target.getName() + capitalize(sourceSet.getRuntimeClasspathConfigurationName()), c -> {
                             c.setCanBeConsumed(false);
                             setInvisible(c);
-                            configureJavaStandardAttributes(c, Usage.JAVA_RUNTIME);
+                            configureJavaStandardAttributes(c, JAVA_RUNTIME);
                             configureTargetAttributes(c, target);
                             c.extendsFrom(
                                     configurations.getByName(sourceSet.getImplementationConfigurationName()),
@@ -256,25 +271,20 @@ public abstract class JavaModulePackagingExtension {
     }
 
     private void configureJavaStandardAttributes(Configuration resolvable, String usage) {
-        resolvable.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, getObjects().named(Usage.class, usage));
-        resolvable
-                .getAttributes()
-                .attribute(Category.CATEGORY_ATTRIBUTE, getObjects().named(Category.class, Category.LIBRARY));
-        resolvable
-                .getAttributes()
-                .attribute(
-                        LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
-                        getObjects().named(LibraryElements.class, LibraryElements.JAR));
-        resolvable
-                .getAttributes()
-                .attribute(
-                        TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
-                        getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM));
-        resolvable
-                .getAttributes()
-                .attribute(Bundling.BUNDLING_ATTRIBUTE, getObjects().named(Bundling.class, Bundling.EXTERNAL));
+        ObjectFactory objects = getObjects();
+        AttributeContainer attributes = resolvable.getAttributes();
+
+        JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
+        Provider<Integer> jvmVersion = java.getToolchain().getLanguageVersion().map(JavaLanguageVersion::asInt);
+
+        attributes.attribute(USAGE_ATTRIBUTE, objects.named(Usage.class, usage));
+        attributes.attribute(CATEGORY_ATTRIBUTE, objects.named(Category.class, LIBRARY));
+        attributes.attribute(LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, JAR));
+        attributes.attribute(TARGET_JVM_ENVIRONMENT_ATTRIBUTE, objects.named(TargetJvmEnvironment.class, STANDARD_JVM));
+        attributes.attribute(BUNDLING_ATTRIBUTE, objects.named(Bundling.class, EXTERNAL));
+        attributes.attributeProvider(TARGET_JVM_VERSION_ATTRIBUTE, jvmVersion);
         // For integration with 'extra-java-module-info' plugin
-        resolvable.getAttributes().attribute(JAVA_MODULE_ATTRIBUTE, true);
+        attributes.attribute(JAVA_MODULE_ATTRIBUTE, true);
     }
 
     private void configureTargetAttributes(Configuration resolvable, Target target) {

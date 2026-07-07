@@ -4,6 +4,7 @@
 - [#122](https://github.com/gradlex-org/java-module-packaging/issues/122) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
 - [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation
 - [#121](https://github.com/gradlex-org/java-module-packaging/issues/121) - Default target based on host system If no target is defined
+- [#103](https://github.com/gradlex-org/java-module-packaging/issues/103) - Set TARGET_JVM_VERSION_ATTRIBUTE on module paths
 
 ## Version 1.2.1
 * [Fixed] [#99](https://github.com/gradlex-org/java-module-packaging/issues/99) - Handle paths with spaces in args file (Thanks [Oliver Kopp](https://github.com/koppor) for contributing!)

@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.gradlex.javamodule.packaging;
 
+import static org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE;
+import static org.gradle.api.attributes.Category.LIBRARY;
+import static org.gradle.api.attributes.Usage.JAVA_RUNTIME;
+import static org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.model.ObjectFactory;
@@ -67,7 +73,8 @@ public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
             c.setCanBeConsumed(false);
             c.setCanBeResolved(true);
             c.extendsFrom(fatModuleJarLauncher.get());
-            c.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_RUNTIME));
+            c.getAttributes().attribute(USAGE_ATTRIBUTE, objects.named(Usage.class, JAVA_RUNTIME));
+            c.getAttributes().attribute(CATEGORY_ATTRIBUTE, objects.named(Category.class, LIBRARY));
         });
     }
 }

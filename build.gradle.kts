@@ -9,9 +9,9 @@ publishingConventions {
     }
     gitHub("https://github.com/gradlex-org/java-module-packaging")
     developer {
-        id.set("jjohannes")
-        name.set("Jendrik Johannes")
-        email.set("jendrik@gradlex.org")
+        id = "jjohannes"
+        name = "Jendrik Johannes"
+        email = "jendrik@gradlex.org"
     }
 }
 

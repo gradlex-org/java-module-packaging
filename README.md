@@ -280,6 +280,26 @@ javaModulePackaging {
 
 You can tell the plugin to perform packaging in one step by setting the `singleStepPackaging = true` option on a target.
 
+### How can I modify the app image before the packages are built from it?
+
+Configure a `postAppImageStep` on a target. It receives the app image directory after all resources have been copied
+into it and runs before the OS-specific packages are built from that image, so modifications end up in all packages.
+
+```kotlin
+javaModulePackaging {
+  allTargets {
+    postAppImageStep = Action<Directory> {
+      // 'this' is the app image directory, e.g. run the packaged launcher once to train a
+      // JEP 514 AOT cache and store it in the image
+    }
+  }
+}
+```
+
+The step is not a task input. If its result depends on state outside the app image, register that state as an
+additional input of the `jpackage<Target>` task. The option cannot be combined with `singleStepPackaging`, because
+single-step packaging builds the packages without an intermediate app image.
+
 ### How does a `fatModuleJar` work?
 
 The structure of the Jar follows the structure defined by the [Jenesis Launcher](https://github.com/raphw/jenesis-launcher).

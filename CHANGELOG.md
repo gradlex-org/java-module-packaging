@@ -1,5 +1,8 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
+## Unreleased
+* [Added] [#135](https://github.com/gradlex-org/java-module-packaging/issues/135) - `postAppImageStep` option to modify the app image before the packages are built from it
+
 ## Version 1.3
 - [#122](https://github.com/gradlex-org/java-module-packaging/issues/122) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
 - [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation

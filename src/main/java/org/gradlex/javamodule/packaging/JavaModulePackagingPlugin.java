@@ -26,7 +26,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public abstract class JavaModulePackagingPlugin implements Plugin<Project> {
 
-    private static final String DEFAULT_FATJAR_LAUNCHER = "build.jenesis:build.jenesis.launcher:0.3.0";
+    private static final String DEFAULT_FATJAR_LAUNCHER = "build.jenesis:build.jenesis.launcher:0.6.5";
 
     @Override
     public void apply(Project project) {

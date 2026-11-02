@@ -60,13 +60,13 @@ public abstract class FatModuleJar extends Jar {
         extendedSpec.with(getRootSpec());
 
         File applicationProperties = writeApplicationProperties();
-        extendedSpec.from(applicationProperties);
+        extendedSpec.from(applicationProperties, c -> c.into("META-INF/jenesis"));
 
         extendedSpec.from(getLauncherPath().getFiles().stream()
                 .map(jar -> getArchives().zipTree(jar).matching(f -> f.exclude("META-INF/MANIFEST.MF")))
                 .collect(Collectors.toList()));
 
-        extendedSpec.into("modulepath", pathFolder -> {
+        extendedSpec.into("jars", pathFolder -> {
             for (File jarOrFolder : getModulePath()) {
                 if (jarOrFolder.exists()) {
                     if (jarOrFolder.isDirectory()) {
@@ -92,8 +92,12 @@ public abstract class FatModuleJar extends Jar {
             Files.write(
                     applicationProperties.toPath(),
                     String.format(
-                                    "mainModule=%s\nmainClass=%s",
-                                    getMainModule().get(), getMainClass().get())
+                                    "mainModule=%s\nmainClass=%s\nmodulepath=%s",
+                                    getMainModule().get(),
+                                    getMainClass().get(),
+                                    getModulePath().getFiles().stream()
+                                            .map(this::nameWithoutExtension)
+                                            .collect(Collectors.joining(",")))
                             .getBytes(UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);

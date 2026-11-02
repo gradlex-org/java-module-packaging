@@ -221,4 +221,37 @@ class JavaModulePackagingOptionsTest {
 
         build.build(":app:jpackage");
     }
+
+    @Test
+    void can_run_a_post_app_image_step() {
+        build.appBuildFile.appendText("""
+            javaModulePackaging {
+                allTargets {
+                    postAppImageStep.set(Action<Directory> {
+                        file("marker.txt").asFile.writeText("touched")
+                    })
+                }
+            }
+        """);
+
+        build.build(":app:jpackage");
+
+        assertThat(build.appImageFolder().getAsPath()).isDirectoryRecursivelyContaining("glob:**/marker.txt");
+    }
+
+    @Test
+    void cannot_combine_post_app_image_step_with_single_step_packaging() {
+        build.appBuildFile.appendText("""
+            javaModulePackaging {
+                allTargets {
+                    singleStepPackaging.set(true)
+                    postAppImageStep.set(Action<Directory> { })
+                }
+            }
+        """);
+
+        var result = build.fail(":app:jpackage");
+
+        assertThat(result.getOutput()).contains("'postAppImageStep' cannot be combined with 'singleStepPackaging'");
+    }
 }

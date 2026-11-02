@@ -337,6 +337,7 @@ public abstract class JavaModulePackagingExtension {
             t.getAppImageOptions().convention(target.getAppImageOptions());
             t.getPackageTypes().convention(target.getPackageTypes());
             t.getSingleStepPackaging().convention(target.getSingleStepPackaging());
+            t.getPostAppImageStep().convention(target.getPostAppImageStep());
             t.getResources().from(getResources());
             t.getTargetResources().from(target.getTargetResources());
             t.getVerbose().convention(getVerbose());

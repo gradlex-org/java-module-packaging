@@ -16,7 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
@@ -112,6 +114,17 @@ public abstract class Jpackage extends DefaultTask {
     @Input
     public abstract Property<Boolean> getVerbose();
 
+    /**
+     * An optional step to run on the created app image, after all resources have been copied into it and before
+     * the OS-specific packages are built from that image. Not supported together with 'singleStepPackaging',
+     * as there is no intermediate app image in that case.
+     *
+     * <p>The step is not an input of this task. If its result depends on state outside the app image, register
+     * that state as an additional task input.
+     */
+    @Internal
+    public abstract Property<Action<Directory>> getPostAppImageStep();
+
     @OutputDirectory
     public abstract DirectoryProperty getDestination();
 
@@ -137,6 +150,12 @@ public abstract class Jpackage extends DefaultTask {
         String arch = getArchitecture().get();
 
         validateHostSystem(arch, os);
+
+        boolean packagesRequested = getPackageTypes().get().stream().anyMatch(t -> !"app-image".equals(t));
+        if (getPostAppImageStep().isPresent() && getSingleStepPackaging().get() && packagesRequested) {
+            throw new InvalidUserDataException("'postAppImageStep' cannot be combined with 'singleStepPackaging', "
+                    + "because single-step packaging builds the packages without an intermediate app image");
+        }
 
         Directory resourcesDir = getTempDirectory().get().dir("jpackage-resources");
         //noinspection ResultOfMethodCallIgnored
@@ -171,6 +190,9 @@ public abstract class Jpackage extends DefaultTask {
                 appRootFolder = new File(appImageFolder, "lib");
             }
             copyAdditionalRessourcesToImageFolder(appRootFolder);
+            if (getPostAppImageStep().isPresent()) {
+                getPostAppImageStep().get().execute(getDestination().get().dir(appImageFolder.getName()));
+            }
         }
 
         if (getSingleStepPackaging().get()) {

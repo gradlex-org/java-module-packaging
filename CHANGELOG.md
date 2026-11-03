@@ -1,5 +1,8 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
+## Version 1.3.1
+- [#146](https://github.com/gradlex-org/java-module-packaging/issues/146) - Update default 'fatModueJar' launcher to 'build.jenesis.launcher:0.6.5'
+
 ## Version 1.3
 - [#122](https://github.com/gradlex-org/java-module-packaging/issues/122) - 'fatModueJar' tasks to re-package module Jars into one Jar with launcher
 - [#102](https://github.com/gradlex-org/java-module-packaging/issues/102) - Configure all targets via 'allTargets' notation

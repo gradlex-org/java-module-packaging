@@ -35,7 +35,7 @@ class FatModuleJarTest {
             public class Main {
                 public static void main(String... args) {
                     boolean isInFatJar = Main.class.getProtectionDomain().getCodeSource().getLocation().toString()
-                        .endsWith("app-1.0-all.jar!/modulepath/app-1.0/");
+                        .endsWith("app-1.0-all.jar!/jars/app-1.0/");
                     System.out.println(Main.class.getModule().getName() + " / " + isInFatJar);
                 }
             }
@@ -84,7 +84,7 @@ class FatModuleJarTest {
         build.build(":app:fatModuleJarUbuntu");
         assertThat(linuxJar).isRegularFile();
 
-        assertThat(macOsJar).hasSize(1082396);
+        assertThat(macOsJar).hasSize(1113524);
         assertThat(macOsJar).hasSameBinaryContentAs(windowsJar);
         assertThat(macOsJar).hasSameBinaryContentAs(linuxJar);
     }
@@ -142,9 +142,9 @@ class FatModuleJarTest {
         build.build(":app:fatModuleJarUbuntu");
         assertThat(linuxJar).isRegularFile();
 
-        assertThat(macOsJar).hasSize(1894824);
-        assertThat(windowsJar).hasSize(1883723);
-        assertThat(linuxJar).hasSize(1886498);
+        assertThat(macOsJar).hasSize(1917646);
+        assertThat(windowsJar).hasSize(1906539);
+        assertThat(linuxJar).hasSize(1909316);
     }
 
     @Test

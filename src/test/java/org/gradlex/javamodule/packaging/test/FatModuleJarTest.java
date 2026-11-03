@@ -47,6 +47,14 @@ class FatModuleJarTest {
         build.build(":app:fatModuleJar");
         assertThat(build.projectDir.file("app/build/libs/app-1.0-all.jar").getAsPath())
                 .isRegularFile();
+        assertThat(build.projectDir
+                        .file("app/build/tmp/fatModuleJar/application.properties")
+                        .getAsPath())
+                .hasContent("""
+                mainModule=org.example.app
+                mainClass=org.example.app.Main
+                modulepath=app-1.0,commons-csv-1.14.1,commons-io-2.20.0,commons-codec-1.19.0
+                """);
     }
 
     @Test
@@ -159,16 +167,36 @@ class FatModuleJarTest {
                 .toAbsolutePath()
                 .toString();
 
-        System.out.println(javaCmd + " -jar " + fatJar);
         String[] command = {javaCmd, "-jar", fatJar};
         Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
 
         var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
         while ((line = reader.readLine()) != null) {
-            System.out.println(line);
             assertThat(line).isEqualTo("org.example.app / true");
         }
         assertThat(process.waitFor()).isEqualTo(0);
+    }
+
+    @Test
+    void can_enable_native_access() throws IOException, InterruptedException {
+        build.appBuildFile.appendText("""
+            version = "1.0"
+            tasks.fatModuleJar {
+                enableNativeAccess.set(listOf("org.example.app"))
+            }
+        """);
+
+        build.build(":app:fatModuleJar");
+
+        assertThat(build.projectDir
+                        .file("app/build/tmp/fatModuleJar/application.properties")
+                        .getAsPath())
+                .hasContent("""
+                mainModule=org.example.app
+                mainClass=org.example.app.Main
+                enableNativeAccess=org.example.app
+                modulepath=app-1.0,commons-csv-1.14.1,commons-io-2.20.0,commons-codec-1.19.0
+                """);
     }
 }

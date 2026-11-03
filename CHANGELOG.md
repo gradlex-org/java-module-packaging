@@ -1,6 +1,7 @@
 # Java Module Packaging Gradle Plugin - Changelog
 
 ## Version 1.3.1
+- [#147](https://github.com/gradlex-org/java-module-packaging/issues/147) - Add 'enableNativeAccess' feature to 'FatModuleJar' task
 - [#146](https://github.com/gradlex-org/java-module-packaging/issues/146) - Update default 'fatModueJar' launcher to 'build.jenesis.launcher:0.6.5'
 
 ## Version 1.3

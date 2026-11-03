@@ -13,6 +13,7 @@ import org.gradle.api.file.ArchiveOperations;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.file.copy.CopySpecInternal;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
@@ -31,6 +32,9 @@ public abstract class FatModuleJar extends Jar {
 
     @Input
     public abstract Property<String> getMainClass();
+
+    @Input
+    public abstract ListProperty<String> getEnableNativeAccess();
 
     @Classpath
     public abstract ConfigurableFileCollection getLauncherPath();
@@ -55,6 +59,10 @@ public abstract class FatModuleJar extends Jar {
     protected void copy() {
         getManifest()
                 .attributes(singletonMap("Main-Class", getLauncherMainClass().get()));
+
+        if (!getEnableNativeAccess().get().isEmpty()) {
+            getManifest().attributes(singletonMap("Enable-Native-Access", "ALL-UNNAMED"));
+        }
 
         CopySpecInternal extendedSpec = (CopySpecInternal) getFiles().copySpec();
         extendedSpec.with(getRootSpec());
@@ -87,14 +95,22 @@ public abstract class FatModuleJar extends Jar {
 
     private File writeApplicationProperties() {
         File applicationProperties = new File(getTemporaryDir(), "application.properties");
+        String enableNativeAccess;
+        if (getEnableNativeAccess().get().isEmpty()) {
+            enableNativeAccess = "";
+        } else {
+            enableNativeAccess = "enableNativeAccess="
+                    + String.join(",", getEnableNativeAccess().get()) + "\n";
+        }
         try {
             Files.createDirectories(applicationProperties.toPath().getParent());
             Files.write(
                     applicationProperties.toPath(),
                     String.format(
-                                    "mainModule=%s\nmainClass=%s\nmodulepath=%s",
+                                    "mainModule=%s\nmainClass=%s\n%smodulepath=%s",
                                     getMainModule().get(),
                                     getMainClass().get(),
+                                    enableNativeAccess,
                                     getModulePath().getFiles().stream()
                                             .map(this::nameWithoutExtension)
                                             .collect(Collectors.joining(",")))
